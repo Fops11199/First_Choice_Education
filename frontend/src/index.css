@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme {
+  /* Academic Blue Palette */
+  --color-primary: #2563EB; /* Royal Blue */
+  --color-primary-dark: #1D4ED8;
+  --color-primary-light: #60A5FA;
+  
+  --color-accent: #F59E0B; /* Academic Gold */
+  --color-accent-hover: #D97706;
+  
+  --color-deep-brown: #0F172A; /* Slate 900 for text */
+  --color-background: #F8FAFC; /* Slate 50 */
+  
+  --color-cam-red: #EF4444; 
+
+  /* Geometry & Texture */
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  
+  --shadow-grounded: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+
+  /* Typography */
+  --font-heading: "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-deep-brown font-body antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading tracking-tight font-bold;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-6 py-2.5 bg-primary text-white font-semibold rounded-lg 
+           transition-all duration-300 hover:bg-primary-dark 
+           active:scale-95 shadow-sm flex items-center justify-center gap-2;
+  }
+
+  .btn-accent {
+    @apply px-6 py-2.5 bg-accent text-white font-semibold rounded-lg 
+           transition-all duration-300 hover:bg-accent-hover 
+           active:scale-95 shadow-sm flex items-center justify-center gap-2;
+  }
+
+  .pattern-card {
+    @apply bg-white border border-slate-100 rounded-xl shadow-grounded p-6 relative overflow-hidden;
+  }
+
+  .pattern-card::after {
+    content: '';
+    @apply absolute top-0 left-0 w-full h-1 bg-primary;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-slate-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
+}

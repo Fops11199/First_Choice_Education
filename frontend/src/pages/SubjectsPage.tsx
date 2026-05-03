@@ -1,0 +1,86 @@
+import React, { useState, useEffect } from 'react';
+import { Search, Book, ArrowRight, Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+const SubjectsPage = () => {
+  const [subjects, setSubjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    // Note: In production, use an environment variable for the API URL
+    fetch('http://localhost:8000/api/v1/content/subjects')
+      .then(res => res.json())
+      .then(data => {
+        setSubjects(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to fetch subjects:", err);
+        setLoading(false);
+      });
+  }, []);
+
+  const filteredSubjects = subjects.filter(sub => 
+    sub.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="pt-24 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+        <div className="max-w-xl">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="w-6 h-1 bg-accent"></span>
+            <span className="text-[10px] font-bold tracking-widest text-primary uppercase">Subject Archive</span>
+          </div>
+          <h1 className="text-3xl md:text-4xl font-bold text-deep-brown mb-4">Find your subject.</h1>
+          <p className="text-base text-slate-600">Browse our complete archive of GCE Ordinary and Advanced Level subjects.</p>
+        </div>
+        
+        <div className="relative w-full md:w-80">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+          <input 
+            type="text" 
+            placeholder="Search subjects..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:border-primary focus:outline-none font-semibold text-sm transition-all shadow-sm"
+          />
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        </div>
+      ) : subjects.length === 0 ? (
+        <div className="text-center py-20 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+          <Book className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+          <p className="text-slate-500 font-bold">No subjects found in the database.</p>
+          <p className="text-xs text-slate-400 mt-1">Admin needs to populate the subjects list.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {filteredSubjects.map((sub, i) => (
+            <motion.div
+              key={sub.id || i}
+              whileHover={{ y: -4 }}
+              className="pattern-card flex flex-col group cursor-pointer p-6"
+            >
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4 group-hover:bg-primary group-hover:text-white transition-all">
+                <Book className="w-5 h-5" />
+              </div>
+              <h3 className="text-lg font-bold text-deep-brown mb-1">{sub.name}</h3>
+              <p className="text-slate-500 font-semibold text-xs mb-4">{sub.papers?.length || 0} Solved Papers</p>
+              <div className="mt-auto flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-widest group-hover:gap-3 transition-all">
+                View Papers <ArrowRight className="w-4 h-4" />
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default SubjectsPage;
