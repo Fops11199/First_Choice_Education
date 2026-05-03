@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Document, Page, pdfjs } from "react-pdf";
 import { ChevronRight, PlayCircle, MessageCircle, FileText, CheckCircle, ZoomIn, ZoomOut, Download } from "lucide-react";
@@ -8,6 +8,9 @@ import { Card, CardContent } from "../components/ui/Card";
 
 // Set worker for react-pdf
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+
+import api from "../api/api";
+import { Loader2 } from "lucide-react";
 
 const TabButton = ({ active, onClick, icon, label }: any) => (
   <button
@@ -22,30 +25,105 @@ const TabButton = ({ active, onClick, icon, label }: any) => (
 );
 
 const PaperPage = () => {
-  useParams();
+  const { id } = useParams();
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.0);
   const [activeTab, setActiveTab] = useState<'video' | 'pdf' | 'discuss'>('pdf');
   const [pdfType, setPdfType] = useState<'question' | 'answer'>('question');
+  
+  const [paper, setPaper] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchPaper = async () => {
+      try {
+        const response = await api.get(`/content/papers/${id}`);
+        const data = response.data;
+        
+        // Find question and answer PDFs
+        const questionPdf = data.pdfs?.find((p: any) => p.pdf_type === 'question')?.file_url;
+        const answerPdf = data.pdfs?.find((p: any) => p.pdf_type === 'answer')?.file_url;
+        
+        // Find first video
+        const video = data.videos?.[0];
+        const videoUrl = video ? `https://www.youtube.com/embed/${video.youtube_id}` : null;
+        
+        // Parse timestamps if they exist
+        let timestamps = [];
+        if (video && video.timestamps) {
+          try {
+            timestamps = JSON.parse(video.timestamps);
+          } catch (e) {
+            console.error("Failed to parse timestamps", e);
+          }
+        }
+
+        setPaper({
+          title: `${data.subject} ${data.year} ${data.paper_type}`,
+          level: `GCE ${data.level}`,
+          videoUrl,
+          questionPdf,
+          answerPdf,
+          timestamps
+        });
+        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching paper:", err);
+        setError("Could not load paper. Please try again later.");
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchPaper();
+    }
+  }, [id]);
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }): void {
     setNumPages(numPages);
   }
 
-  // Mock Data
-  const paper = {
-    title: "Mathematics 2023 Paper 2",
-    level: "GCE A-Level",
-    videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", 
-    questionPdf: "https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf",
-    answerPdf: "https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf",
-    timestamps: [
-      { time: "00:45", label: "Part A: Algebra" },
-      { time: "02:20", label: "Part B: Calculus" },
-      { time: "04:10", label: "Part C: Trigonometry" },
-    ]
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+
+  const handleComplete = async () => {
+    setIsCompleting(true);
+    try {
+      await api.post('/students/me/progress', { 
+        paper_id: id, 
+        status: 'completed' 
+      });
+      setIsCompleted(true);
+      alert("Paper marked as completed! Your progress has been updated.");
+    } catch (err) {
+      console.error("Failed to mark as completed:", err);
+      alert("Failed to update progress. Please try again.");
+    } finally {
+      setIsCompleting(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center pt-24">
+        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (error || !paper) {
+    return (
+      <div className="min-h-screen flex items-center justify-center pt-24 px-4 text-center">
+        <div>
+          <h2 className="text-2xl font-bold text-deep-brown mb-2">Oops!</h2>
+          <p className="text-slate-600 mb-6">{error || "Paper not found."}</p>
+          <Link to="/dashboard" className="btn-primary py-2 px-6">Back to Dashboard</Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pt-24 pb-16 min-h-screen bg-slate-50">
@@ -69,8 +147,21 @@ const PaperPage = () => {
             <Button variant="outline" size="sm" className="gap-2 text-xs border-slate-200">
               <Download className="w-3.5 h-3.5" /> Download
             </Button>
-            <Button variant="primary" size="sm" className="gap-2 text-xs px-6 shadow-sm">
-              <CheckCircle className="w-3.5 h-3.5" /> Complete
+            <Button 
+              variant="primary" 
+              size="sm" 
+              className="gap-2 text-xs px-6 shadow-sm"
+              onClick={handleComplete}
+              disabled={isCompleting || isCompleted}
+            >
+              {isCompleting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : isCompleted ? (
+                <CheckCircle className="w-3.5 h-3.5" />
+              ) : (
+                <CheckCircle className="w-3.5 h-3.5" />
+              )}
+              {isCompleted ? "Completed" : "Complete"}
             </Button>
           </div>
         </div>

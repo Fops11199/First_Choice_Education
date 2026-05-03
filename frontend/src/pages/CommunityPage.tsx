@@ -1,14 +1,16 @@
-import React from 'react';
-import { MessageSquare, Users, TrendingUp, Search, Plus, ArrowUpRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { MessageSquare, Users, TrendingUp, Search, Plus, ArrowUpRight, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const CommunityPage = () => {
-  const threads = [
-    { title: "Tips for Biology Paper 2 (2024)", author: "Tutor Foncha", replies: 124, category: "Biology" },
-    { title: "Hardest Maths Question in 2023 Paper 1?", author: "Ngwa Brian", replies: 86, category: "Maths" },
-    { title: "Study Group for Yaoundé Students", author: "Mbah Grace", replies: 45, category: "General" },
-    { title: "Chemistry Practical Mock Discussion", author: "Dr. Ambe", replies: 210, category: "Chemistry" },
-  ];
+  const [threads, setThreads] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    // Eventually fetch from /api/v1/community/threads
+    setThreads([]);
+    setLoading(false);
+  }, []);
 
   return (
     <div className="pt-24 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -35,31 +37,41 @@ const CommunityPage = () => {
             <input type="text" placeholder="Search discussions..." className="flex-1 bg-transparent border-none focus:outline-none font-semibold text-sm" />
           </div>
 
-          {threads.map((thread, i) => (
-            <motion.div
-              key={i}
-              whileHover={{ x: 4 }}
-              className="pattern-card flex items-center justify-between gap-4 cursor-pointer p-5"
-            >
-              <div className="flex items-center gap-4">
-                <div className="bg-slate-50 p-3 rounded-lg text-primary">
-                  <MessageSquare className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-deep-brown mb-0.5">{thread.title}</h3>
-                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
-                    <span className="text-primary uppercase tracking-widest text-[9px]">{thread.category}</span>
-                    <span className="w-1 h-1 rounded-full bg-slate-200"></span>
-                    <span>By {thread.author}</span>
+          {threads.length > 0 ? (
+            threads.map((thread, i) => (
+              <motion.div
+                key={i}
+                whileHover={{ x: 4 }}
+                className="pattern-card flex items-center justify-between gap-4 cursor-pointer p-5"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="bg-slate-50 p-3 rounded-lg text-primary">
+                    <MessageSquare className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-deep-brown mb-0.5">{thread.title}</h3>
+                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+                      <span className="text-primary uppercase tracking-widest text-[9px]">{thread.category}</span>
+                      <span className="w-1 h-1 rounded-full bg-slate-200"></span>
+                      <span>By {thread.author}</span>
+                    </div>
                   </div>
                 </div>
+                <div className="text-right hidden sm:block">
+                  <p className="text-lg font-bold text-deep-brown leading-none mb-0.5">{thread.replies}</p>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Replies</p>
+                </div>
+              </motion.div>
+            ))
+          ) : (
+            <div className="bg-white border border-slate-200 border-dashed rounded-2xl p-16 text-center">
+              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <MessageCircle className="w-10 h-10 text-slate-300" />
               </div>
-              <div className="text-right hidden sm:block">
-                <p className="text-lg font-bold text-deep-brown leading-none mb-0.5">{thread.replies}</p>
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Replies</p>
-              </div>
-            </motion.div>
-          ))}
+              <h3 className="text-xl font-bold text-deep-brown mb-2">The Community is waking up</h3>
+              <p className="text-slate-500 text-sm max-w-sm mx-auto">Be the first to start a discussion about a paper, study tips, or GCE updates.</p>
+            </div>
+          )}
         </div>
 
         {/* Sidebar */}

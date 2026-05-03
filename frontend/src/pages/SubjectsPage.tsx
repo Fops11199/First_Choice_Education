@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Book, ArrowRight, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
+import api from '../api/api';
 
 const SubjectsPage = () => {
+  const { user } = useAuth();
   const [subjects, setSubjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedLevel, setSelectedLevel] = useState<string>(user?.level || "O-Level");
 
   useEffect(() => {
-    // Note: In production, use an environment variable for the API URL
-    fetch('http://localhost:8000/api/v1/content/subjects')
-      .then(res => res.json())
-      .then(data => {
-        setSubjects(data);
+    api.get('/content/subjects')
+      .then(response => {
+        setSubjects(response.data);
         setLoading(false);
       })
       .catch(err => {
@@ -21,9 +24,15 @@ const SubjectsPage = () => {
       });
   }, []);
 
-  const filteredSubjects = subjects.filter(sub => 
-    sub.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredSubjects = subjects.filter(sub => {
+    const matchesSearch = sub.name.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Normalize both strings to handle "O-Level" vs "O Level" vs "o-level"
+    const normalize = (str: string) => (str || "").toLowerCase().replace(/-/g, " ").trim();
+    const matchesLevel = normalize(sub.level_name) === normalize(selectedLevel);
+    
+    return matchesSearch && matchesLevel;
+  });
 
   return (
     <div className="pt-24 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -33,8 +42,26 @@ const SubjectsPage = () => {
             <span className="w-6 h-1 bg-accent"></span>
             <span className="text-[10px] font-bold tracking-widest text-primary uppercase">Subject Archive</span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-deep-brown mb-4">Find your subject.</h1>
-          <p className="text-base text-slate-600">Browse our complete archive of GCE Ordinary and Advanced Level subjects.</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-deep-brown mb-4">Your {selectedLevel} Subjects.</h1>
+          <p className="text-base text-slate-600">Browse the complete archive of subjects for the selected GCE level.</p>
+          
+          {/* Level Toggle for Admins or users without a set level */}
+          {(!user?.level || user.role === 'admin') && (
+            <div className="flex gap-2 mt-6">
+              <button 
+                onClick={() => setSelectedLevel("O-Level")}
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${selectedLevel === "O-Level" ? "bg-primary text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+              >
+                O-Level
+              </button>
+              <button 
+                onClick={() => setSelectedLevel("A-Level")}
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${selectedLevel === "A-Level" ? "bg-primary text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+              >
+                A-Level
+              </button>
+            </div>
+          )}
         </div>
         
         <div className="relative w-full md:w-80">
@@ -62,20 +89,24 @@ const SubjectsPage = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {filteredSubjects.map((sub, i) => (
-            <motion.div
+            <Link 
               key={sub.id || i}
-              whileHover={{ y: -4 }}
-              className="pattern-card flex flex-col group cursor-pointer p-6"
+              to={`/subjects/${sub.id}/papers`}
             >
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4 group-hover:bg-primary group-hover:text-white transition-all">
-                <Book className="w-5 h-5" />
-              </div>
-              <h3 className="text-lg font-bold text-deep-brown mb-1">{sub.name}</h3>
-              <p className="text-slate-500 font-semibold text-xs mb-4">{sub.papers?.length || 0} Solved Papers</p>
-              <div className="mt-auto flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-widest group-hover:gap-3 transition-all">
-                View Papers <ArrowRight className="w-4 h-4" />
-              </div>
-            </motion.div>
+              <motion.div
+                whileHover={{ y: -4 }}
+                className="pattern-card flex flex-col group cursor-pointer p-6 h-full"
+              >
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4 group-hover:bg-primary group-hover:text-white transition-all">
+                  <Book className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-bold text-deep-brown mb-1">{sub.name}</h3>
+                <p className="text-slate-500 font-semibold text-xs mb-4">{sub.papers?.length || 0} Solved Papers</p>
+                <div className="mt-auto flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-widest group-hover:gap-3 transition-all">
+                  View Papers <ArrowRight className="w-4 h-4" />
+                </div>
+              </motion.div>
+            </Link>
           ))}
         </div>
       )}

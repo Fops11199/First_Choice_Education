@@ -2,16 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Book, GraduationCap, ArrowRight, Star, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import api from '../api/api';
 
 const LevelSelector = () => {
   const [levels, setLevels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/v1/content/levels')
-      .then(res => res.json())
-      .then(data => {
-        setLevels(data);
+    api.get('/content/levels')
+      .then(response => {
+        setLevels(response.data);
         setLoading(false);
       })
       .catch(err => {

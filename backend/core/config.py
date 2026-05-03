@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/firstchoice"
     
+    # Google Auth
+    GOOGLE_CLIENT_ID: str = ""
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=True

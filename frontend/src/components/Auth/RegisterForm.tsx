@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../api/api';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { BookOpen, Check } from 'lucide-react';
@@ -39,80 +40,163 @@ const RegisterForm = () => {
     }
 
     try {
-      // Mock registration for now
-      setTimeout(() => {
-        login('mock-token', { 
-          id: '2', 
-          email: formData.email, 
-          full_name: formData.fullName, 
-          role: 'student',
-          level: formData.level 
-        });
-        navigate('/dashboard');
-      }, 1000);
+      const response = await api.post('/auth/register', {
+        full_name: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+        whatsapp_number: formData.whatsappNumber,
+        level: formData.level
+      });
+
+      // After registration, log them in
+      const loginRes = await api.post('/auth/login', new URLSearchParams({
+        username: formData.email,
+        password: formData.password
+      }), {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
+
+      const { access_token, user } = loginRes.data;
+      login(access_token, user);
+      navigate('/dashboard');
     } catch (err: any) {
+      console.error('Registration error:', err);
       setError(err.response?.data?.detail || 'Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  useEffect(() => {
+    /* global google */
+    if (window.google) {
+      window.google.accounts.id.initialize({
+        client_id: "776425653026-oj7ttrf7ovqs3v73sgism57akl8s00dp.apps.googleusercontent.com",
+        callback: handleGoogleSuccess
+      });
+      window.google.accounts.id.renderButton(
+        document.getElementById("googleRegisterDiv"),
+        { theme: "outline", size: "large", width: "100%", shape: "rectangular" }
+      );
+    }
+  }, []);
+
+  const handleGoogleSuccess = async (response: any) => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const res = await api.post('/auth/google', {
+        credential: response.credential
+      });
+      
+      const { access_token, user } = res.data;
+      login(access_token, user);
+      navigate('/dashboard');
+    } catch (err: any) {
+      console.error('Google login error:', err);
+      setError(err.response?.data?.detail || 'Google authentication failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col md:flex-row">
-      {/* Visual Section */}
-      <div className="hidden md:flex flex-1 bg-deep-blue text-white p-12 flex-col justify-between relative overflow-hidden">
-        <div className="relative z-10">
-          <Link to="/" className="flex items-center gap-2 mb-16">
-            <div className="bg-primary p-1.5 rounded-lg shadow-lg shadow-primary/20">
-              <BookOpen className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-xl font-bold tracking-tight">
-              First Choice Education
-            </span>
-          </Link>
-          <h1 className="text-4xl font-bold mb-8 leading-tight">
-            Start your journey to<br />academic excellence.
-          </h1>
-          
-          <ul className="space-y-4 text-slate-300">
-            <li className="flex items-center gap-3">
-              <div className="bg-cam-green/20 p-1 rounded-full"><Check className="w-4 h-4 text-cam-green" /></div>
-              <span>Access 10+ years of GCE past papers</span>
-            </li>
-            <li className="flex items-center gap-3">
-              <div className="bg-cam-green/20 p-1 rounded-full"><Check className="w-4 h-4 text-cam-green" /></div>
-              <span>Step-by-step video walkthroughs</span>
-            </li>
-            <li className="flex items-center gap-3">
-              <div className="bg-cam-green/20 p-1 rounded-full"><Check className="w-4 h-4 text-cam-green" /></div>
-              <span>Join a community of 5,000+ students</span>
-            </li>
-          </ul>
+    <div className="min-h-screen flex bg-slate-50">
+      {/* Visual Section - Premium Cinematic Split */}
+      <div className="hidden lg:flex lg:w-5/12 xl:w-1/2 relative bg-slate-900 overflow-hidden flex-col justify-between p-12">
+        {/* Animated Background Gradients */}
+        <motion.div 
+          animate={{ 
+            scale: [1, 1.2, 1],
+            rotate: [0, -90, 0],
+            opacity: [0.3, 0.5, 0.3]
+          }}
+          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+          className="absolute -top-1/2 -right-1/2 w-full h-full bg-primary/40 rounded-full blur-[120px]"
+        />
+        <motion.div 
+          animate={{ 
+            scale: [1, 1.5, 1],
+            rotate: [0, 90, 0],
+            opacity: [0.2, 0.4, 0.2]
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-indigo-600/40 rounded-full blur-[120px]"
+        />
+
+        {/* Content */}
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="bg-white/10 backdrop-blur-md p-2.5 rounded-2xl border border-white/20 shadow-xl">
+            <BookOpen className="w-8 h-8 text-white" />
+          </div>
+          <span className="text-2xl font-black tracking-tight text-white">First Choice<span className="text-primary-light">.</span></span>
         </div>
-        <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-primary rounded-full blur-3xl opacity-20"></div>
+
+        <div className="relative z-10 max-w-lg mb-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <h1 className="text-5xl xl:text-6xl font-black text-white leading-[1.1] mb-8">
+              Begin your <br/>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-light to-indigo-300">
+                success story.
+              </span>
+            </h1>
+            
+            <div className="space-y-6">
+              {[
+                "Access 10+ years of GCE past papers",
+                "Step-by-step HD video walkthroughs",
+                "Join a community of 5,000+ students"
+              ].map((text, index) => (
+                <motion.div 
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 + (index * 0.1) }}
+                  key={index} 
+                  className="flex items-center gap-4 bg-white/5 backdrop-blur-sm p-4 rounded-2xl border border-white/10 shadow-lg"
+                >
+                  <div className="bg-primary/20 p-2 rounded-xl">
+                    <Check className="w-5 h-5 text-primary-light" />
+                  </div>
+                  <span className="text-slate-200 font-medium">{text}</span>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
       </div>
 
       {/* Form Section */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 bg-background">
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 lg:p-16 relative overflow-y-auto">
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="w-full max-w-[480px] my-auto py-8"
         >
-          <div className="md:hidden flex items-center justify-center mb-8">
-            <div className="bg-primary p-2 rounded-xl shadow-lg shadow-primary/20">
+          <div className="lg:hidden flex items-center justify-center mb-8">
+            <div className="bg-primary p-3 rounded-2xl shadow-xl shadow-primary/20">
               <BookOpen className="w-8 h-8 text-white" />
             </div>
           </div>
           
-          <h2 className="text-2xl sm:text-3xl font-bold text-deep-blue mb-2 text-center md:text-left">Create your account</h2>
-          <p className="text-slate-500 mb-8 text-center md:text-left">Join the best GCE preparation platform in Cameroon.</p>
+          <div className="mb-10 text-center lg:text-left">
+            <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2">Create your account</h2>
+            <p className="text-slate-500 font-medium">Join the best GCE preparation platform in Cameroon.</p>
+          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="p-3 text-sm text-cam-red bg-cam-red/10 rounded-xl font-medium">
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="p-4 text-sm text-red-600 bg-red-50 border border-red-100 rounded-2xl font-bold flex items-center gap-2"
+              >
+                <div className="w-2 h-2 rounded-full bg-red-600"></div>
                 {error}
-              </div>
+              </motion.div>
             )}
             
             <Input
@@ -122,9 +206,10 @@ const RegisterForm = () => {
               onChange={handleChange}
               placeholder="e.g. John Doe"
               required
+              className="bg-white border-slate-200 shadow-sm"
             />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <Input
                 label="Email Address"
                 name="email"
@@ -133,6 +218,7 @@ const RegisterForm = () => {
                 onChange={handleChange}
                 placeholder="john@example.com"
                 required
+                className="bg-white border-slate-200 shadow-sm"
               />
               <Input
                 label="WhatsApp Number"
@@ -140,24 +226,24 @@ const RegisterForm = () => {
                 value={formData.whatsappNumber}
                 onChange={handleChange}
                 placeholder="6XX XXX XXX"
-                helperText="Optional for updates"
+                className="bg-white border-slate-200 shadow-sm"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-slate-700">GCE Level</label>
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">GCE Level</label>
               <select 
                 name="level"
                 value={formData.level}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm appearance-none"
               >
                 <option value="O-Level">Ordinary Level (O-Level)</option>
                 <option value="A-Level">Advanced Level (A-Level)</option>
               </select>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <Input
                 label="Password"
                 name="password"
@@ -166,6 +252,7 @@ const RegisterForm = () => {
                 onChange={handleChange}
                 placeholder="••••••••"
                 required
+                className="bg-white border-slate-200 shadow-sm"
               />
               <Input
                 label="Confirm Password"
@@ -175,18 +262,38 @@ const RegisterForm = () => {
                 onChange={handleChange}
                 placeholder="••••••••"
                 required
+                className="bg-white border-slate-200 shadow-sm"
               />
             </div>
 
-            <Button type="submit" className="w-full mt-2" isLoading={isLoading}>
+            <Button 
+              type="submit" 
+              className="w-full py-4 mt-2 text-base rounded-2xl shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/30 transition-all font-bold" 
+              isLoading={isLoading}
+            >
               Create Account
             </Button>
+
+            <div className="relative py-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-200"></div>
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-slate-50 px-4 text-xs font-bold uppercase tracking-widest text-slate-400">
+                  Or sign up with
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200 p-1 hover:border-slate-300 transition-colors shadow-sm">
+              <div id="googleRegisterDiv" className="w-full overflow-hidden rounded-xl flex justify-center"></div>
+            </div>
           </form>
 
-          <p className="mt-8 text-center text-slate-600">
+          <p className="mt-8 text-center text-sm font-medium text-slate-500 pb-8">
             Already have an account?{' '}
-            <Link to="/login" className="text-primary font-medium hover:text-primary-dark">
-              Log in
+            <Link to="/login" className="text-primary font-bold hover:text-primary-dark transition-colors">
+              Log in instead
             </Link>
           </p>
         </motion.div>

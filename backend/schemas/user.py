@@ -32,6 +32,7 @@ class UserResponseSchema(BaseModel):
 class TokenSchema(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    user: UserResponseSchema
 
 class TokenDataSchema(BaseModel):
     email: Optional[str] = None

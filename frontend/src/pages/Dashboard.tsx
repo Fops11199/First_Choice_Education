@@ -1,25 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Badge } from '../components/ui/Badge';
-import { Play, FileText, CheckCircle, Clock, Layout, Star, ArrowRight, BookOpen, Trophy } from 'lucide-react';
+import { Play, FileText, CheckCircle, Clock, Layout, Star, ArrowRight, BookOpen, Trophy, Flame, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import api from '../api/api';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const [dashboardStats, setDashboardStats] = useState<any>(null);
+  const [enrollments, setEnrollments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const recentActivity = [
-    { id: 1, title: 'Maths 2023 Paper 2', subject: 'Maths', level: 'A-Level', status: 'In Progress' },
-    { id: 2, title: 'Physics 2022 Paper 1', subject: 'Physics', level: 'A-Level', status: 'Completed' },
-    { id: 3, title: 'Chemistry 2021 Paper 3', subject: 'Chemistry', level: 'A-Level', status: 'Flagged' },
-  ];
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const [statsRes, enrollmentsRes] = await Promise.all([
+          api.get('/students/me/dashboard'),
+          api.get('/students/me/enrollments'),
+        ]);
+        setDashboardStats(statsRes.data);
+        setEnrollments(enrollmentsRes.data);
+      } catch (err) {
+        console.error('Failed to fetch dashboard data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboard();
+  }, []);
 
-  const progress = [
-    { subject: 'Maths', completed: 14, total: 20, color: 'bg-primary' },
-    { subject: 'Physics', completed: 8, total: 20, color: 'bg-primary-light' },
-    { subject: 'Biology', completed: 0, total: 20, color: 'bg-slate-300' },
-  ];
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 pt-24 w-full">
@@ -36,12 +53,21 @@ const Dashboard = () => {
         
         <div className="flex gap-4">
           <div className="bg-white border border-slate-100 rounded-xl px-6 py-3 flex items-center gap-4 shadow-sm">
-            <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
-              <Trophy className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center text-orange-500">
+              <Flame className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Global Rank</p>
-              <p className="text-xl font-bold text-deep-brown">#1,402</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Day Streak</p>
+              <p className="text-xl font-bold text-deep-brown">{dashboardStats?.current_streak ?? 0} days</p>
+            </div>
+          </div>
+          <div className="bg-white border border-slate-100 rounded-xl px-6 py-3 flex items-center gap-4 shadow-sm">
+            <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center text-green-500">
+              <CheckCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Completed</p>
+              <p className="text-xl font-bold text-deep-brown">{dashboardStats?.papers_completed ?? 0} papers</p>
             </div>
           </div>
         </div>
@@ -50,95 +76,78 @@ const Dashboard = () => {
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Left Column: Learning Track */}
+        {/* Left Column: My Subjects */}
         <div className="lg:col-span-2 space-y-8">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <h2 className="text-xl font-bold text-deep-brown flex items-center gap-3">
               <BookOpen className="w-5 h-5 text-primary" />
-              Your Learning Track
+              My Enrolled Subjects
             </h2>
-            <button className="text-primary font-bold text-sm hover:underline">
+            <Link to="/subjects" className="text-primary font-bold text-sm hover:underline">
               Browse All
-            </button>
+            </Link>
           </div>
           
           <div className="grid gap-4">
-            {recentActivity.map((activity) => (
-              <motion.div
-                key={activity.id}
-                whileHover={{ y: -2 }}
-                className="bg-white border border-slate-100 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-primary/20 transition-all shadow-sm"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="bg-background p-3 rounded-lg">
-                    <FileText className="w-6 h-6 text-slate-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-deep-brown mb-1">{activity.title}</h3>
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
-                      <span className="text-primary uppercase tracking-widest">{activity.subject}</span>
-                      <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                      <span>{activity.level}</span>
+            {enrollments.length > 0 ? (
+              enrollments.map((enrollment) => (
+                <motion.div
+                  key={enrollment.enrollment_id}
+                  whileHover={{ y: -2 }}
+                  className="bg-white border border-slate-100 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-primary/20 transition-all shadow-sm"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="bg-primary/5 p-3 rounded-lg">
+                      <BookOpen className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-deep-brown mb-1">{enrollment.subject_name}</h3>
+                      <p className="text-xs font-bold text-slate-400">Enrolled since {new Date(enrollment.enrolled_at).toLocaleDateString()}</p>
                     </div>
                   </div>
+                  <Link to={`/subjects/${enrollment.subject_id}/papers`} className="btn-primary py-2 px-6 text-sm inline-flex items-center gap-2">
+                    View Papers <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </motion.div>
+              ))
+            ) : (
+              <div className="bg-white border border-slate-100 border-dashed rounded-2xl p-12 text-center">
+                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FileText className="w-8 h-8 text-slate-300" />
                 </div>
-                <div className="flex items-center gap-4 w-full sm:w-auto justify-between">
-                  <Badge variant={
-                    activity.status === 'Completed' ? 'success' :
-                    activity.status === 'In Progress' ? 'warning' : 'outline'
-                  }>
-                    {activity.status}
-                  </Badge>
-                  <Button variant="primary" size="sm" className="rounded-lg px-6">
-                    Resume
-                  </Button>
-                </div>
-              </motion.div>
-            ))}
+                <h3 className="text-lg font-bold text-deep-brown mb-2">No subjects yet</h3>
+                <p className="text-slate-500 text-sm mb-6 max-w-xs mx-auto">Browse subjects and enroll to start your preparation.</p>
+                <Link to="/subjects" className="btn-primary py-2.5 px-8 inline-flex">Explore Subjects</Link>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Right Column: Performance */}
-        <div className="space-y-8">
-          <h2 className="text-xl font-bold text-deep-brown">Subject Mastery</h2>
+        {/* Right Column: Stats */}
+        <div className="space-y-6">
+          <h2 className="text-xl font-bold text-deep-brown">Your Progress</h2>
           
-          <div className="bg-deep-brown text-white rounded-2xl p-6 space-y-8 shadow-md relative overflow-hidden">
-            {/* Subtle pattern background for the card */}
-            <div className="absolute inset-0 opacity-5 pointer-events-none">
-              <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-                <pattern id="dash-pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-                  <path d="M0 20L20 0H10L0 10V20Z" fill="currentColor" />
-                </pattern>
-                <rect width="100%" height="100%" fill="url(#dash-pattern)" />
-              </svg>
+          <div className="bg-deep-brown text-white rounded-2xl p-6 space-y-5 shadow-md">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold text-white/60 uppercase tracking-widest">Summary</p>
             </div>
-
-            <div className="relative z-10 space-y-6">
-              {progress.map((stat) => (
-                <div key={stat.subject}>
-                  <div className="flex justify-between items-end mb-2">
-                    <div>
-                      <p className="text-xs font-bold text-accent uppercase tracking-widest">{stat.subject}</p>
-                      <p className="text-[10px] font-bold text-white/50">{stat.completed} papers solved</p>
-                    </div>
-                    <span className="text-lg font-bold">{Math.round((stat.completed/stat.total)*100)}%</span>
-                  </div>
-                  <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(stat.completed / stat.total) * 100}%` }}
-                      transition={{ duration: 1.5, ease: "easeOut" }}
-                      className={`h-full rounded-full ${stat.color === 'bg-primary' ? 'bg-accent' : stat.color}`}
-                    ></motion.div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="relative z-10 pt-4 border-t border-white/10">
-              <Button variant="outline" className="w-full justify-between text-white border-white/20 hover:bg-white/5 rounded-lg text-sm">
-                View Full Report <ArrowRight className="w-4 h-4" />
-              </Button>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white/10 rounded-xl p-4 text-center">
+                <p className="text-2xl font-black">{dashboardStats?.enrolled_subjects ?? 0}</p>
+                <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest mt-1">Subjects</p>
+              </div>
+              <div className="bg-white/10 rounded-xl p-4 text-center">
+                <p className="text-2xl font-black">{dashboardStats?.papers_completed ?? 0}</p>
+                <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest mt-1">Solved</p>
+              </div>
+              <div className="bg-white/10 rounded-xl p-4 text-center">
+                <p className="text-2xl font-black">{dashboardStats?.current_streak ?? 0}</p>
+                <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest mt-1">Streak</p>
+              </div>
+              <div className="bg-white/10 rounded-xl p-4 text-center">
+                <p className="text-2xl font-black">{dashboardStats?.badges_earned ?? 0}</p>
+                <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest mt-1">Badges</p>
+              </div>
             </div>
           </div>
 

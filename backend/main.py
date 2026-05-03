@@ -1,15 +1,23 @@
+# First Choice Education API - Main Entry Point
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
+import os
 from db.database import init_db
-from routers import auth, content, community
+from routers import auth, content, community, users, students, admin
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
     yield
 
-app = FastAPI(title="First Choice Education API", lifespan=lifespan)
+app = FastAPI(
+    title="First Choice Education API",
+    description="GCE past papers platform for Cameroonian students",
+    version="2.0.0",
+    lifespan=lifespan
+)
 
 # Configure CORS
 app.add_middleware(
@@ -20,13 +28,42 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Auth (public)
 app.include_router(auth.router, prefix="/api/v1")
+
+# Self-service profile (any auth user)
+app.include_router(users.router, prefix="/api/v1")
+
+# Read-only content (any auth user)
 app.include_router(content.router, prefix="/api/v1")
+
+# Student data — /me pattern, JWT-inferred identity
+app.include_router(students.router, prefix="/api/v1")
+
+# Community (any auth user)
 app.include_router(community.router, prefix="/api/v1")
+
+# Admin-only CRUD for all platform content
+app.include_router(admin.router, prefix="/api/v1")
+
+# Static Files (PDFs)
+if not os.path.exists("uploads"):
+    os.makedirs("uploads")
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to First Choice Education API", "status": "active"}
+    return {
+        "message": "First Choice Education API",
+        "version": "2.0.0",
+        "docs": "/docs",
+        "status": "active"
+    }
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ import uuid
 class VideoBaseSchema(BaseModel):
     youtube_id: str
     timestamps: Optional[str] = None
-    creator_id: uuid.UUID
+    creator_id: Optional[uuid.UUID] = None
 
 class VideoResponseSchema(VideoBaseSchema):
     id: uuid.UUID
@@ -43,6 +43,7 @@ class SubjectBaseSchema(BaseModel):
 
 class SubjectResponseSchema(SubjectBaseSchema):
     id: uuid.UUID
+    level_name: Optional[str] = None
     papers: List[PaperResponseSchema] = []
 
     class Config:

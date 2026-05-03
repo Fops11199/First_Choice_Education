@@ -77,21 +77,25 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Stats */}
+      {/* Highlights */}
       <section className="bg-white py-12 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            {[
-              { label: 'Papers Solved', value: '1,200+' },
-              { label: 'Active Students', value: '150k+' },
-              { label: 'Pass Rate', value: '94%' },
-              { label: 'Expert Tutors', value: '50+' },
-            ].map((stat, i) => (
-              <div key={i}>
-                <p className="text-3xl md:text-4xl font-bold text-primary mb-1">{stat.value}</p>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{stat.label}</p>
-              </div>
-            ))}
+          <div className="flex flex-wrap justify-center gap-12 text-center">
+            <div className="max-w-[200px]">
+              <ShieldCheck className="w-8 h-8 text-primary mx-auto mb-3" />
+              <p className="text-sm font-bold text-deep-brown">Verified Solutions</p>
+              <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-1">GCE Expert Approved</p>
+            </div>
+            <div className="max-w-[200px]">
+              <Users className="w-8 h-8 text-primary mx-auto mb-3" />
+              <p className="text-sm font-bold text-deep-brown">Student Community</p>
+              <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-1">Learn Together</p>
+            </div>
+            <div className="max-w-[200px]">
+              <Play className="w-8 h-8 text-primary mx-auto mb-3" />
+              <p className="text-sm font-bold text-deep-brown">Video Lessons</p>
+              <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-1">Step-by-step guidance</p>
+            </div>
           </div>
         </div>
       </section>
