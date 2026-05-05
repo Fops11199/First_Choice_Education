@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, Menu, X, User, LogOut } from 'lucide-react';
+import { BookOpen, Menu, X, User, LogOut, Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -56,7 +56,10 @@ const Navbar = () => {
                   </div>
                   <span className="text-sm font-bold text-slate-700">Portal</span>
                 </Link>
-                <button onClick={logout} className="text-slate-400 hover:text-red-500 transition-colors">
+                <Link to="/settings" className="text-slate-400 hover:text-primary transition-colors" title="Settings">
+                  <Settings className="w-4 h-4" />
+                </Link>
+                <button onClick={logout} className="text-slate-400 hover:text-red-500 transition-colors" title="Logout">
                   <LogOut className="w-4 h-4" />
                 </button>
               </div>
@@ -123,6 +126,9 @@ const Navbar = () => {
                     <>
                       <Link to="/dashboard" onClick={() => setIsOpen(false)} className="flex items-center gap-3 px-4 py-3 text-slate-600 font-bold">
                         <User className="w-5 h-5 text-primary" /> Dashboard
+                      </Link>
+                      <Link to="/settings" onClick={() => setIsOpen(false)} className="flex items-center gap-3 px-4 py-3 text-slate-600 font-bold">
+                        <Settings className="w-5 h-5 text-slate-400" /> Settings
                       </Link>
                       <button onClick={() => { logout(); setIsOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-red-500 font-bold">
                         <LogOut className="w-5 h-5" /> Logout

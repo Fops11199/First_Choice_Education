@@ -1,6 +1,6 @@
 from sqlmodel import SQLModel, Field
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
 
 class UserBase(SQLModel):
@@ -29,3 +29,11 @@ class UserUpdate(SQLModel):
     whatsapp_number: Optional[str] = None
     level: Optional[str] = None
     password: Optional[str] = None
+
+class PasswordResetToken(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    email: str = Field(index=True)
+    code: str
+    expires_at: datetime
+    is_used: bool = Field(default=False)
+

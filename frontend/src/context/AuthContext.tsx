@@ -6,6 +6,7 @@ interface User {
   full_name: string;
   role: 'student' | 'creator' | 'admin';
   level?: string;
+  whatsapp_number?: string;
 }
 
 interface AuthContextType {

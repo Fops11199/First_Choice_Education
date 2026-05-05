@@ -4,7 +4,7 @@ Admin Router — /api/v1/admin/*
 ALL endpoints require admin role.
 Covers: stats, users, full CRUD for levels/subjects/papers/videos/pdfs.
 """
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Request
 from sqlmodel import Session, select, func
 from db.database import get_session
 from models.user import User
@@ -352,6 +352,7 @@ def delete_pdf(
 # ── File Uploads ─────────────────────────────────────────────
 @router.post("/upload")
 async def upload_file(
+    request: Request,
     file: UploadFile = File(...),
     current_user: User = Depends(require_admin)
 ):
@@ -366,9 +367,9 @@ async def upload_file(
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
             
-        # Return URL (hardcoded localhost for now, should be env variable in prod)
-        # Note: Students will access via http://localhost:8000/uploads/...
-        public_url = f"http://localhost:8000/uploads/{filename}"
+        # Dynamically build the URL based on the request's host/port
+        base_url = str(request.base_url).rstrip("/")
+        public_url = f"{base_url}/uploads/{filename}"
         
         return {"url": public_url, "filename": filename}
     except Exception as e:

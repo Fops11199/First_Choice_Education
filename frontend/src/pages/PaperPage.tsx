@@ -35,6 +35,9 @@ const PaperPage = () => {
   const [paper, setPaper] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [isPosting, setIsPosting] = useState(false);
 
   useEffect(() => {
     const fetchPaper = async () => {
@@ -76,8 +79,19 @@ const PaperPage = () => {
       }
     };
 
+    const fetchComments = async () => {
+      if (!id) return;
+      try {
+        const res = await api.get(`/community/papers/${id}/comments`);
+        setComments(res.data);
+      } catch (err) {
+        console.error("Error fetching comments:", err);
+      }
+    };
+
     if (id) {
       fetchPaper();
+      fetchComments();
     }
   }, [id]);
 
@@ -102,6 +116,24 @@ const PaperPage = () => {
       alert("Failed to update progress. Please try again.");
     } finally {
       setIsCompleting(false);
+    }
+  };
+
+  const handlePostComment = async () => {
+    if (!newComment.trim() || !id) return;
+    setIsPosting(true);
+    try {
+      const res = await api.post(`/community/papers/${id}/comments`, {
+        content: newComment
+      });
+      // Add the new comment to the list instantly
+      setComments(prev => [...prev, res.data]);
+      setNewComment(""); // clear input
+    } catch (err) {
+      console.error("Error posting comment:", err);
+      alert("Failed to post comment. Please try again.");
+    } finally {
+      setIsPosting(false);
     }
   };
 
@@ -272,20 +304,48 @@ const PaperPage = () => {
                     Community Discussion
                   </h3>
                 </div>
-                <div className="flex-1 p-6 space-y-6">
-                  <div className="flex gap-4">
-                    <div className="w-9 h-9 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center text-primary font-bold text-xs">JS</div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-900 mb-1">John Student <span className="text-slate-400 font-normal ml-2">2h ago</span></p>
-                      <p className="text-sm text-slate-600 mb-2">Can someone explain question 4? The integration part is confusing.</p>
-                      <button className="text-[10px] font-bold text-primary hover:underline">Reply</button>
+                <div className="flex-1 p-6 space-y-6 max-h-[400px] overflow-y-auto">
+                  {comments.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                      <MessageCircle className="w-12 h-12 mb-2 opacity-20" />
+                      <p>No comments yet. Be the first to ask a question!</p>
                     </div>
-                  </div>
+                  ) : (
+                    comments.map((comment) => (
+                      <div key={comment.id} className="flex gap-4">
+                        <div className="w-9 h-9 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center text-primary font-bold text-xs">
+                          {comment.author_initials}
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-900 mb-1">
+                            {comment.author_name} <span className="text-slate-400 font-normal ml-2">{comment.created_at}</span>
+                          </p>
+                          <p className="text-sm text-slate-600 mb-2">{comment.content}</p>
+                          <button className="text-[10px] font-bold text-primary hover:underline">Reply</button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
                 <div className="p-4 border-t border-slate-100 bg-white">
                   <div className="flex gap-3">
-                    <input type="text" placeholder="Add to discussion..." className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary" />
-                    <Button size="sm" className="px-6 text-xs">Post</Button>
+                    <input 
+                      type="text" 
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handlePostComment()}
+                      placeholder="Add to discussion..." 
+                      className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary" 
+                    />
+                    <Button 
+                      size="sm" 
+                      className="px-6 text-xs"
+                      onClick={handlePostComment}
+                      isLoading={isPosting}
+                      disabled={!newComment.trim()}
+                    >
+                      Post
+                    </Button>
                   </div>
                 </div>
               </Card>

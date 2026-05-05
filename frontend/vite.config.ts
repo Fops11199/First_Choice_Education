@@ -12,6 +12,7 @@ export default defineConfig({
     host: true, // Listen on all network interfaces
     port: 5173,
     strictPort: true,
+    allowedHosts: ["31.220.79.169.nip.io"],
     hmr: {
       clientPort: 5173, // Ensure HMR uses the correct port
     }

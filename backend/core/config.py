@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     # Google Auth
     GOOGLE_CLIENT_ID: str = ""
     
+    # Brevo
+    BREVO_API_KEY: str = "dummy_key"
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=True

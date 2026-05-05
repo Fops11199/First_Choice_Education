@@ -1,11 +1,16 @@
 import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import ScrollToTop from './components/ScrollToTop';
 import Home from './pages/Home';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import Dashboard from './pages/Dashboard';
+import OnboardingPage from './pages/OnboardingPage';
+import SettingsPage from './pages/SettingsPage';
 import PaperPage from './pages/PaperPage';
 import LevelSelector from './pages/LevelSelector';
 import SubjectsPage from './pages/SubjectsPage';
@@ -39,10 +44,14 @@ const PublicLayout = () => (
 );
 
 function App() {
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "dummy-client-id";
+  
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
+    <GoogleOAuthProvider clientId={clientId}>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
         <Router>
+          <ScrollToTop />
           <Routes>
             {/* Admin Routes - Protected with AdminLayout (role check is inside) */}
             <Route path="/admin_dashboard" element={<ProtectedRoute roles={['admin']}><AdminLayout /></ProtectedRoute>}>
@@ -60,12 +69,15 @@ function App() {
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
 
-              {/* Guest-only Pages (Login/Register) */}
+              {/* Guest-only Pages (Login/Register/Forgot Password) */}
               <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
               <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
+              <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
 
               {/* Protected Student/User Pages */}
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
               <Route path="/levels" element={<ProtectedRoute><LevelSelector /></ProtectedRoute>} />
               <Route path="/subjects" element={<ProtectedRoute><SubjectsPage /></ProtectedRoute>} />
               <Route path="/subjects/:id/papers" element={<ProtectedRoute><SubjectPapersPage /></ProtectedRoute>} />
@@ -76,6 +88,7 @@ function App() {
         </Router>
       </AuthProvider>
     </QueryClientProvider>
+    </GoogleOAuthProvider>
   );
 }
 
