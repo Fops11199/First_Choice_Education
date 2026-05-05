@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, BookOpen, Edit2, Trash2, Loader2, FileText, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import api from '../../api/api';
 
 const AdminSubjects = () => {

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Button } from '../components/ui/Button';
-import { Play, FileText, CheckCircle, Clock, Layout, Star, ArrowRight, BookOpen, Trophy, Flame, Loader2 } from 'lucide-react';
+
+import { FileText, CheckCircle, Star, ArrowRight, BookOpen, Trophy, Flame, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import api from '../api/api';
 
@@ -11,8 +11,17 @@ const Dashboard = () => {
   const [dashboardStats, setDashboardStats] = useState<any>(null);
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Review state
+  const [review, setReview] = useState({ rating: 5, content: '' });
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
   useEffect(() => {
+    if (user?.role === 'admin' || user?.role === 'tutor') {
+      return; // Handled by render redirect
+    }
+
     const fetchDashboard = async () => {
       try {
         const [statsRes, enrollmentsRes] = await Promise.all([
@@ -28,7 +37,31 @@ const Dashboard = () => {
       }
     };
     fetchDashboard();
-  }, []);
+  }, [user]);
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!review.content.trim()) return;
+    setSubmittingReview(true);
+    try {
+      await api.post('/reviews/', review);
+      setReviewSubmitted(true);
+      setReview({ rating: 5, content: '' });
+    } catch (err) {
+      console.error('Failed to submit review', err);
+      alert('Failed to submit review');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  if (user?.role === 'admin') {
+    return <Navigate to="/admin_dashboard" replace />;
+  }
+  
+  if (user?.role === 'tutor') {
+    return <Navigate to="/tutor_dashboard" replace />;
+  }
 
   if (loading) {
     return (
@@ -160,6 +193,49 @@ const Dashboard = () => {
               "Focus on Biology Paper 2 from 2018. It covers 40% of the core topics for this year's session."
             </p>
             <button className="text-primary font-semibold text-sm hover:underline">Read more tips</button>
+          </div>
+
+          <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+            <h3 className="text-base font-bold text-deep-brown mb-4">How are we doing?</h3>
+            {reviewSubmitted ? (
+              <div className="text-center py-4">
+                <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <CheckCircle className="w-6 h-6 text-green-500" />
+                </div>
+                <p className="text-sm font-bold text-slate-900 mb-1">Thank you!</p>
+                <p className="text-xs text-slate-500">Your review is being moderated.</p>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmitReview} className="space-y-4">
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setReview({ ...review, rating: star })}
+                      className="focus:outline-none"
+                    >
+                      <Star className={`w-5 h-5 ${review.rating >= star ? 'text-accent fill-accent' : 'text-slate-200'}`} />
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  required
+                  placeholder="Share your experience..."
+                  value={review.content}
+                  onChange={(e) => setReview({ ...review, content: e.target.value })}
+                  className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-primary/20 min-h-[80px] font-medium"
+                />
+                <button
+                  type="submit"
+                  disabled={submittingReview}
+                  className="w-full py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-sm shadow-slate-200"
+                >
+                  {submittingReview ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trophy className="w-3.5 h-3.5 text-accent" />}
+                  Submit Testimonial
+                </button>
+              </form>
+            )}
           </div>
         </div>
 

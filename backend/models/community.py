@@ -17,6 +17,9 @@ class Reply(SQLModel, table=True):
     thread_id: uuid.UUID = Field(foreign_key="thread.id")
     author_id: uuid.UUID = Field(foreign_key="user.id")
     content: str
+    parent_id: Optional[uuid.UUID] = Field(default=None, foreign_key="reply.id")
+    is_pinned: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
     thread: Thread = Relationship(back_populates="replies")
+

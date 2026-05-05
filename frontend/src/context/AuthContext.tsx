@@ -4,7 +4,7 @@ interface User {
   id: string;
   email: string;
   full_name: string;
-  role: 'student' | 'creator' | 'admin';
+  role: 'student' | 'tutor' | 'admin';
   level?: string;
   whatsapp_number?: string;
 }

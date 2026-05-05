@@ -56,6 +56,18 @@
     content: '';
     @apply absolute top-0 left-0 w-full h-1 bg-primary;
   }
+
+  .responsive-container {
+    @apply w-full overflow-x-auto;
+  }
+
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Custom Scrollbar */

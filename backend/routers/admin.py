@@ -17,7 +17,8 @@ from schemas.content import (
     VideoBaseSchema,
     PDFBaseSchema
 )
-from core.security import require_admin
+from schemas.user import UserRoleUpdateSchema, UserCreateAdminSchema
+from core.security import require_admin, get_password_hash
 from typing import List
 import uuid
 import os
@@ -74,21 +75,96 @@ def get_recent_subjects(
 # ── User Management ──────────────────────────────────────────
 @router.get("/users")
 def list_users(
+    role: str = None,
     db: Session = Depends(get_session),
     current_user: User = Depends(require_admin)
 ):
-    """List all registered students."""
-    users = db.exec(select(User).where(User.role == "student")).all()
+    """List registered users, optionally filtered by role."""
+    statement = select(User)
+    if role:
+        statement = statement.where(User.role == role)
+    
+    users = db.exec(statement).all()
     return [
         {
             "id": str(u.id),
             "full_name": u.full_name,
             "email": u.email,
+            "role": u.role,
             "level": u.level,
             "is_active": u.is_active,
+            "created_at": u.created_at.isoformat() if u.created_at else None,
         }
         for u in users
     ]
+
+
+@router.put("/users/{user_id}/role")
+def update_user_role(
+    user_id: uuid.UUID,
+    role_data: UserRoleUpdateSchema,
+    db: Session = Depends(get_session),
+    current_user: User = Depends(require_admin)
+):
+    """Change a user's role (promote/demote)."""
+    user = db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Prevent self-demotion or removing the last admin (optional safety)
+    if user.id == current_user.id and role_data.role != "admin":
+        raise HTTPException(status_code=400, detail="You cannot change your own admin role.")
+        
+    user.role = role_data.role
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return {"message": f"User role updated to {role_data.role}", "user_id": str(user.id)}
+
+
+@router.post("/users", status_code=status.HTTP_201_CREATED)
+def create_privileged_user(
+    user_data: UserCreateAdminSchema,
+    db: Session = Depends(get_session),
+    current_user: User = Depends(require_admin)
+):
+    """Create a new Admin or Tutor account directly."""
+    # Check if email exists
+    existing = db.exec(select(User).where(User.email == user_data.email)).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+        
+    hashed_password = get_password_hash(user_data.password)
+    new_user = User(
+        full_name=user_data.full_name,
+        email=user_data.email,
+        password_hash=hashed_password,
+        role=user_data.role,
+        is_active=True
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return {"message": f"{user_data.role.capitalize()} created successfully", "id": str(new_user.id)}
+
+
+@router.delete("/users/{user_id}")
+def delete_user(
+    user_id: uuid.UUID,
+    db: Session = Depends(get_session),
+    current_user: User = Depends(require_admin)
+):
+    """Delete a user account. Admins cannot delete themselves."""
+    user = db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.id == current_user.id:
+        raise HTTPException(status_code=400, detail="You cannot delete your own account.")
+    
+    db.delete(user)
+    db.commit()
+    return {"message": f"User {user.full_name} has been deleted"}
 
 
 # ── Levels CRUD ──────────────────────────────────────────────

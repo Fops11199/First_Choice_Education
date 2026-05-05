@@ -1,27 +1,56 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FileText, ArrowRight, BookOpen, Loader2, ChevronLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
 import api from '../api/api';
 
 const SubjectPapersPage = () => {
   const { id } = useParams();
+  const { user } = useAuth();
   const [data, setData] = useState<any>(null);
+  const [isEnrolled, setIsEnrolled] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
+  const [enrolling, setEnrolling] = useState(false);
 
   useEffect(() => {
-    const fetchPapers = async () => {
+    const fetchData = async () => {
       try {
-        const response = await api.get(`/content/subjects/${id}/papers`);
-        setData(response.data);
+        const [papersRes, enrolRes] = await Promise.all([
+          api.get(`/content/subjects/${id}/papers`),
+          user?.role === 'student' ? api.get('/students/me/enrollments') : Promise.resolve({ data: [] })
+        ]);
+        
+        setData(papersRes.data);
+        
+        if (user?.role === 'student') {
+          const enrolled = enrolRes.data.some((e: any) => e.subject_id === id);
+          setIsEnrolled(enrolled);
+        } else {
+          setIsEnrolled(true); // Admins and tutors are always "enrolled"
+        }
       } catch (err) {
-        console.error("Failed to fetch papers:", err);
+        console.error("Failed to fetch data:", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchPapers();
-  }, [id]);
+    fetchData();
+  }, [id, user]);
+
+  const handleEnroll = async () => {
+    if (!id || user?.role !== 'student') return;
+    setEnrolling(true);
+    try {
+      await api.post('/students/me/enrollments', { subject_id: id });
+      setIsEnrolled(true);
+    } catch (err) {
+      console.error("Failed to enroll:", err);
+      alert("Failed to enroll. Please try again.");
+    } finally {
+      setEnrolling(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -71,6 +100,24 @@ const SubjectPapersPage = () => {
             <FileText className="w-12 h-12 text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-bold text-deep-brown">No papers available yet</h3>
             <p className="text-sm text-slate-500">We are currently uploading content for this subject. Check back soon!</p>
+          </div>
+        ) : !isEnrolled ? (
+          <div className="col-span-full py-16 px-6 text-center bg-slate-50 rounded-3xl border border-slate-200 shadow-inner max-w-2xl mx-auto">
+            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-slate-400 mx-auto mb-6 shadow-sm">
+              <BookOpen className="w-8 h-8" />
+            </div>
+            <h3 className="text-2xl font-bold text-deep-brown mb-3">Enroll to Access Papers</h3>
+            <p className="text-slate-500 mb-8 max-w-md mx-auto">
+              You need to enroll in {data.subject_name} to access its past papers, video solutions, and PDF materials. Enrollment is free!
+            </p>
+            <button 
+              onClick={handleEnroll}
+              disabled={enrolling}
+              className="btn-primary py-3 px-8 rounded-xl inline-flex items-center gap-2 text-lg font-bold shadow-lg shadow-primary/20"
+            >
+              {enrolling ? <Loader2 className="w-5 h-5 animate-spin" /> : <BookOpen className="w-5 h-5" />}
+              {enrolling ? 'Enrolling...' : 'Enroll Now for Free'}
+            </button>
           </div>
         ) : (
           data.papers.map((paper: any, i: number) => (

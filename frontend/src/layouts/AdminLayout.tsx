@@ -8,11 +8,12 @@ import {
   Settings, 
   LogOut, 
   Search, 
-  Bell,
   Menu,
-  X
+  X,
+  Star
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import NotificationMenu from '../components/NotificationMenu';
 
 const AdminLayout = () => {
   const { user, logout, loading } = useAuth();
@@ -34,6 +35,7 @@ const AdminLayout = () => {
     { name: 'Dashboard', path: '/admin_dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
     { name: 'Subjects', path: '/admin_dashboard/subjects', icon: <BookOpen className="w-5 h-5" /> },
     { name: 'Users', path: '/admin_dashboard/users', icon: <Users className="w-5 h-5" /> },
+    { name: 'Testimonials', path: '/admin_dashboard/testimonials', icon: <Star className="w-5 h-5" /> },
     { name: 'Settings', path: '/admin_dashboard/settings', icon: <Settings className="w-5 h-5" /> },
   ];
 
@@ -133,10 +135,7 @@ const AdminLayout = () => {
           </div>
 
           <div className="flex items-center gap-4 sm:gap-6">
-            <button className="relative p-2 text-slate-400 hover:text-primary transition-colors rounded-full hover:bg-slate-50">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-            </button>
+            <NotificationMenu />
             
             <div className="flex items-center gap-3 pl-4 border-l border-slate-100">
               <div className="hidden sm:block text-right">

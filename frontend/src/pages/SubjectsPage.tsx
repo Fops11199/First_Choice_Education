@@ -8,21 +8,49 @@ import api from '../api/api';
 const SubjectsPage = () => {
   const { user } = useAuth();
   const [subjects, setSubjects] = useState<any[]>([]);
+  const [enrollments, setEnrollments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [enrollingId, setEnrollingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedLevel, setSelectedLevel] = useState<string>(user?.level || "O-Level");
 
   useEffect(() => {
-    api.get('/content/subjects')
-      .then(response => {
-        setSubjects(response.data);
+    const fetchData = async () => {
+      try {
+        const [subRes, enrolRes] = await Promise.all([
+          api.get('/content/subjects'),
+          user?.role === 'student' ? api.get('/students/me/enrollments') : Promise.resolve({ data: [] })
+        ]);
+        setSubjects(subRes.data);
+        if (user?.role === 'student') {
+          setEnrollments(enrolRes.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch data:", err);
+      } finally {
         setLoading(false);
-      })
-      .catch(err => {
-        console.error("Failed to fetch subjects:", err);
-        setLoading(false);
-      });
-  }, []);
+      }
+    };
+    fetchData();
+  }, [user]);
+
+  const handleEnroll = async (e: React.MouseEvent, subjectId: string) => {
+    e.preventDefault(); // Prevent navigation
+    if (user?.role !== 'student') return;
+    
+    setEnrollingId(subjectId);
+    try {
+      await api.post('/students/me/enrollments', { subject_id: subjectId });
+      // Refresh enrollments
+      const enrolRes = await api.get('/students/me/enrollments');
+      setEnrollments(enrolRes.data);
+    } catch (err) {
+      console.error("Failed to enroll:", err);
+      alert("Failed to enroll. Please try again.");
+    } finally {
+      setEnrollingId(null);
+    }
+  };
 
   const filteredSubjects = subjects.filter(sub => {
     const matchesSearch = sub.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -88,26 +116,53 @@ const SubjectsPage = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {filteredSubjects.map((sub, i) => (
-            <Link 
-              key={sub.id || i}
-              to={`/subjects/${sub.id}/papers`}
-            >
-              <motion.div
-                whileHover={{ y: -4 }}
-                className="pattern-card flex flex-col group cursor-pointer p-6 h-full"
+          {filteredSubjects.map((sub, i) => {
+            const isEnrolled = enrollments.some(e => e.subject_id === sub.id);
+            const isStudent = user?.role === 'student';
+
+            return (
+              <Link 
+                key={sub.id || i}
+                to={`/subjects/${sub.id}/papers`}
               >
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4 group-hover:bg-primary group-hover:text-white transition-all">
-                  <Book className="w-5 h-5" />
-                </div>
-                <h3 className="text-lg font-bold text-deep-brown mb-1">{sub.name}</h3>
-                <p className="text-slate-500 font-semibold text-xs mb-4">{sub.papers?.length || 0} Solved Papers</p>
-                <div className="mt-auto flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-widest group-hover:gap-3 transition-all">
-                  View Papers <ArrowRight className="w-4 h-4" />
-                </div>
-              </motion.div>
-            </Link>
-          ))}
+                <motion.div
+                  whileHover={{ y: -4 }}
+                  className={`pattern-card flex flex-col group cursor-pointer p-6 h-full border ${isEnrolled ? 'border-primary/30 bg-primary/5' : 'border-slate-100'}`}
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
+                      <Book className="w-5 h-5" />
+                    </div>
+                    {isStudent && isEnrolled && (
+                      <span className="text-[10px] font-bold uppercase tracking-widest bg-green-100 text-green-700 px-2 py-1 rounded-md">
+                        Enrolled
+                      </span>
+                    )}
+                  </div>
+                  
+                  <h3 className="text-lg font-bold text-deep-brown mb-1">{sub.name}</h3>
+                  <p className="text-slate-500 font-semibold text-xs mb-4">{sub.papers?.length || 0} Solved Papers</p>
+                  
+                  <div className="mt-auto flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-widest group-hover:gap-3 transition-all">
+                      View Papers <ArrowRight className="w-4 h-4" />
+                    </div>
+                    
+                    {isStudent && !isEnrolled && (
+                      <button 
+                        onClick={(e) => handleEnroll(e, sub.id)}
+                        disabled={enrollingId === sub.id}
+                        className="btn-primary py-1.5 px-4 text-xs rounded-lg inline-flex items-center gap-2"
+                      >
+                        {enrollingId === sub.id && <Loader2 className="w-3 h-3 animate-spin" />}
+                        Enroll Now
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

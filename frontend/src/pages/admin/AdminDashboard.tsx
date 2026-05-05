@@ -82,34 +82,36 @@ const AdminDashboard = () => {
             <Link to="/admin_dashboard/subjects" className="text-sm font-bold text-primary hover:underline">View All</Link>
           </div>
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-            {recentSubjects.length > 0 ? (
-              <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] tracking-widest border-b border-slate-100">
-                  <tr>
-                    <th className="px-6 py-4">Subject Name</th>
-                    <th className="px-6 py-4">Level</th>
-                    <th className="px-6 py-4">Papers</th>
-                    <th className="px-6 py-4 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {recentSubjects.map((subject) => (
-                    <RecentSubjectRow 
-                      key={subject.id}
-                      id={subject.id}
-                      name={subject.name} 
-                      level={subject.level} 
-                      papers={subject.paper_count} 
-                      onEdit={() => navigate(`/admin_dashboard/subjects/${subject.id}/papers`)}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div className="p-12 text-center text-slate-500 font-semibold">
-                No subjects found. Start by adding one.
-              </div>
-            )}
+            <div className="overflow-x-auto">
+              {recentSubjects.length > 0 ? (
+                <table className="w-full text-left text-sm min-w-[600px]">
+                  <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] tracking-widest border-b border-slate-100">
+                    <tr>
+                      <th className="px-6 py-4">Subject Name</th>
+                      <th className="px-6 py-4">Level</th>
+                      <th className="px-6 py-4">Papers</th>
+                      <th className="px-6 py-4 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {recentSubjects.map((subject) => (
+                      <RecentSubjectRow 
+                        key={subject.id}
+                        id={subject.id}
+                        name={subject.name} 
+                        level={subject.level} 
+                        papers={subject.paper_count} 
+                        onEdit={() => navigate(`/admin_dashboard/subjects/${subject.id}/papers`)}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="p-12 text-center text-slate-500 font-semibold">
+                  No subjects found. Start by adding one.
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -177,7 +179,7 @@ const StatCard = ({ title, value, icon, color, trend }: any) => (
   </motion.div>
 );
 
-const RecentSubjectRow = ({ id, name, level, papers, onEdit }: any) => (
+const RecentSubjectRow = ({ name, level, papers, onEdit }: any) => (
   <tr className="hover:bg-slate-50/50 transition-colors">
     <td className="px-6 py-4">
       <div className="flex items-center gap-3">

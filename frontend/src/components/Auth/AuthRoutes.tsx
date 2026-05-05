@@ -23,7 +23,7 @@ export const ProtectedRoute = ({ children, roles }: { children: React.ReactNode,
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (roles && !roles.includes(user.role)) {
+  if (roles && user && !roles.includes(user.role)) {
     // If user doesn't have the required role, redirect to their default dashboard
     const redirectPath = user.role === 'admin' ? '/admin_dashboard' : '/dashboard';
     return <Navigate to={redirectPath} replace />;

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { BookOpen, Menu, X, User, LogOut, Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import NotificationMenu from './NotificationMenu';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,6 +15,18 @@ const Navbar = () => {
     { name: 'Subjects', path: '/subjects' },
     { name: 'Community', path: '/community' },
   ];
+
+  const getPortalLink = () => {
+    if (user?.role === 'admin') return '/admin_dashboard';
+    if (user?.role === 'tutor') return '/tutor_dashboard';
+    return '/dashboard';
+  };
+
+  const getPortalName = () => {
+    if (user?.role === 'admin') return 'Admin Portal';
+    if (user?.role === 'tutor') return 'Tutor Portal';
+    return 'Student Portal';
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-200 shadow-sm h-16">
@@ -50,11 +63,12 @@ const Navbar = () => {
 
             {user ? (
               <div className="flex items-center gap-5">
-                <Link to="/dashboard" className="flex items-center gap-2 group">
+                <NotificationMenu />
+                <Link to={getPortalLink()} className="flex items-center gap-2 group">
                   <div className="w-8 h-8 rounded-full bg-primary/5 flex items-center justify-center group-hover:bg-primary/10 transition-all">
                     <User className="w-4 h-4 text-primary" />
                   </div>
-                  <span className="text-sm font-bold text-slate-700">Portal</span>
+                  <span className="text-sm font-bold text-slate-700">{getPortalName()}</span>
                 </Link>
                 <Link to="/settings" className="text-slate-400 hover:text-primary transition-colors" title="Settings">
                   <Settings className="w-4 h-4" />
@@ -124,8 +138,8 @@ const Navbar = () => {
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2">Account</p>
                   {user ? (
                     <>
-                      <Link to="/dashboard" onClick={() => setIsOpen(false)} className="flex items-center gap-3 px-4 py-3 text-slate-600 font-bold">
-                        <User className="w-5 h-5 text-primary" /> Dashboard
+                      <Link to={getPortalLink()} onClick={() => setIsOpen(false)} className="flex items-center gap-3 px-4 py-3 text-slate-600 font-bold">
+                        <User className="w-5 h-5 text-primary" /> {getPortalName()}
                       </Link>
                       <Link to="/settings" onClick={() => setIsOpen(false)} className="flex items-center gap-3 px-4 py-3 text-slate-600 font-bold">
                         <Settings className="w-5 h-5 text-slate-400" /> Settings

@@ -16,6 +16,7 @@ import LevelSelector from './pages/LevelSelector';
 import SubjectsPage from './pages/SubjectsPage';
 import SubjectPapersPage from './pages/SubjectPapersPage';
 import CommunityPage from './pages/CommunityPage';
+import ThreadDetail from './pages/ThreadDetail';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import PrivacyPage from './pages/PrivacyPage';
@@ -29,6 +30,11 @@ import AdminLayout from './layouts/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminSubjects from './pages/admin/AdminSubjects';
 import AdminPapers from './pages/admin/AdminPapers';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminTestimonials from './pages/admin/AdminTestimonials';
+
+// Tutor Imports
+import TutorDashboard from './pages/tutor/TutorDashboard';
 
 const queryClient = new QueryClient();
 
@@ -57,7 +63,14 @@ function App() {
             <Route path="/admin_dashboard" element={<ProtectedRoute roles={['admin']}><AdminLayout /></ProtectedRoute>}>
               <Route index element={<AdminDashboard />} />
               <Route path="subjects" element={<AdminSubjects />} />
-          <Route path="subjects/:subjectId/papers" element={<AdminPapers />} />
+              <Route path="subjects/:subjectId/papers" element={<AdminPapers />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="testimonials" element={<AdminTestimonials />} />
+            </Route>
+
+            {/* Tutor Routes */}
+            <Route path="/tutor_dashboard" element={<ProtectedRoute roles={['tutor', 'admin']}><PublicLayout /></ProtectedRoute>}>
+              <Route index element={<TutorDashboard />} />
             </Route>
 
             {/* Main Application Layout */}
@@ -83,6 +96,7 @@ function App() {
               <Route path="/subjects/:id/papers" element={<ProtectedRoute><SubjectPapersPage /></ProtectedRoute>} />
               <Route path="/paper/:id" element={<ProtectedRoute><PaperPage /></ProtectedRoute>} />
               <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
+              <Route path="/community/:threadId" element={<ProtectedRoute><ThreadDetail /></ProtectedRoute>} />
             </Route>
           </Routes>
         </Router>

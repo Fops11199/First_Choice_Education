@@ -37,3 +37,12 @@ class TokenSchema(BaseModel):
 class TokenDataSchema(BaseModel):
     email: Optional[str] = None
     user_id: Optional[str] = None
+
+class UserRoleUpdateSchema(BaseModel):
+    role: str = Field(..., pattern="^(student|tutor|admin)$")
+
+class UserCreateAdminSchema(BaseModel):
+    full_name: str = Field(..., min_length=2, max_length=100)
+    email: EmailStr
+    password: str = Field(..., min_length=8)
+    role: str = Field(..., pattern="^(tutor|admin)$")

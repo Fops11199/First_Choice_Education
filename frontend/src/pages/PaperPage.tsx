@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Document, Page, pdfjs } from "react-pdf";
-import { ChevronRight, PlayCircle, MessageCircle, FileText, CheckCircle, ZoomIn, ZoomOut, Download } from "lucide-react";
+import { ChevronRight, PlayCircle, MessageCircle, FileText, CheckCircle, ZoomIn, ZoomOut, Download, Pin, Shield, GraduationCap, X } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
 import { Card, CardContent } from "../components/ui/Card";
@@ -11,6 +11,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 
 import api from "../api/api";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const TabButton = ({ active, onClick, icon, label }: any) => (
   <button
@@ -32,12 +33,14 @@ const PaperPage = () => {
   const [activeTab, setActiveTab] = useState<'video' | 'pdf' | 'discuss'>('pdf');
   const [pdfType, setPdfType] = useState<'question' | 'answer'>('question');
   
+  const { user } = useAuth();
   const [paper, setPaper] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isPosting, setIsPosting] = useState(false);
+  const [replyTo, setReplyTo] = useState<{ id: string, name: string } | null>(null);
 
   useEffect(() => {
     const fetchPaper = async () => {
@@ -123,18 +126,104 @@ const PaperPage = () => {
     if (!newComment.trim() || !id) return;
     setIsPosting(true);
     try {
-      const res = await api.post(`/community/papers/${id}/comments`, {
-        content: newComment
-      });
+      const payload: any = { content: newComment };
+      if (replyTo) {
+        payload.parent_id = replyTo.id;
+      }
+      const res = await api.post(`/community/papers/${id}/comments`, payload);
       // Add the new comment to the list instantly
       setComments(prev => [...prev, res.data]);
       setNewComment(""); // clear input
+      setReplyTo(null); // clear reply state
     } catch (err) {
       console.error("Error posting comment:", err);
       alert("Failed to post comment. Please try again.");
     } finally {
       setIsPosting(false);
     }
+  };
+
+  const handlePin = async (commentId: string) => {
+    try {
+      const res = await api.put(`/community/papers/${id}/comments/${commentId}/pin`);
+      setComments(prev => prev.map(c => c.id === commentId ? res.data : c));
+    } catch (err) {
+      console.error("Error pinning comment:", err);
+      alert("Failed to pin comment.");
+    }
+  };
+
+  // Group comments into a tree
+  const rootComments = comments.filter(c => !c.parent_id);
+  // Sort roots: pinned first, then by date
+  rootComments.sort((a, b) => {
+    if (a.is_pinned && !b.is_pinned) return -1;
+    if (!a.is_pinned && b.is_pinned) return 1;
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  });
+  
+  const getReplies = (parentId: string) => {
+    return comments.filter(c => c.parent_id === parentId).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  };
+
+  const CommentItem = ({ comment, isReply = false }: { comment: any, isReply?: boolean }) => {
+    const replies = getReplies(comment.id);
+    const canPin = user?.role === 'admin' || user?.role === 'tutor';
+
+    return (
+      <div className={`flex gap-4 ${isReply ? 'ml-12 mt-4' : 'mt-6'}`}>
+        <div className="w-9 h-9 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center text-primary font-bold text-xs">
+          {comment.author_initials}
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-bold text-slate-900">{comment.author_name}</span>
+            {comment.author_role === 'admin' && (
+              <span className="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
+                <Shield className="w-3 h-3" /> Admin
+              </span>
+            )}
+            {comment.author_role === 'tutor' && (
+              <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
+                <GraduationCap className="w-3 h-3" /> Tutor
+              </span>
+            )}
+            {comment.is_pinned && (
+              <span className="bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
+                <Pin className="w-3 h-3" /> Pinned
+              </span>
+            )}
+            <span className="text-slate-400 text-xs">{comment.created_at}</span>
+          </div>
+          <p className="text-sm text-slate-600 mb-2">{comment.content}</p>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setReplyTo({ id: comment.id, name: comment.author_name })}
+              className="text-[10px] font-bold text-primary hover:underline"
+            >
+              Reply
+            </button>
+            {canPin && !isReply && (
+              <button 
+                onClick={() => handlePin(comment.id)}
+                className="text-[10px] font-bold text-slate-400 hover:text-slate-600 flex items-center gap-1"
+              >
+                <Pin className="w-3 h-3" /> {comment.is_pinned ? 'Unpin' : 'Pin'}
+              </button>
+            )}
+          </div>
+
+          {/* Render Replies */}
+          {replies.length > 0 && (
+            <div className="border-l-2 border-slate-100 pl-4">
+              {replies.map(reply => (
+                <CommentItem key={reply.id} comment={reply} isReply={true} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   if (loading) {
@@ -305,36 +394,33 @@ const PaperPage = () => {
                   </h3>
                 </div>
                 <div className="flex-1 p-6 space-y-6 max-h-[400px] overflow-y-auto">
-                  {comments.length === 0 ? (
+                  {rootComments.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-slate-400">
                       <MessageCircle className="w-12 h-12 mb-2 opacity-20" />
                       <p>No comments yet. Be the first to ask a question!</p>
                     </div>
                   ) : (
-                    comments.map((comment) => (
-                      <div key={comment.id} className="flex gap-4">
-                        <div className="w-9 h-9 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center text-primary font-bold text-xs">
-                          {comment.author_initials}
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-slate-900 mb-1">
-                            {comment.author_name} <span className="text-slate-400 font-normal ml-2">{comment.created_at}</span>
-                          </p>
-                          <p className="text-sm text-slate-600 mb-2">{comment.content}</p>
-                          <button className="text-[10px] font-bold text-primary hover:underline">Reply</button>
-                        </div>
-                      </div>
+                    rootComments.map((comment) => (
+                      <CommentItem key={comment.id} comment={comment} />
                     ))
                   )}
                 </div>
-                <div className="p-4 border-t border-slate-100 bg-white">
+                <div className="p-4 border-t border-slate-100 bg-white flex flex-col gap-3">
+                  {replyTo && (
+                    <div className="flex items-center justify-between bg-primary/5 px-3 py-2 rounded-lg text-xs font-bold text-primary">
+                      <span>Replying to {replyTo.name}</span>
+                      <button onClick={() => setReplyTo(null)} className="text-slate-400 hover:text-slate-600">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                   <div className="flex gap-3">
                     <input 
                       type="text" 
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handlePostComment()}
-                      placeholder="Add to discussion..." 
+                      placeholder={replyTo ? "Write a reply..." : "Add to discussion..."}
                       className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary" 
                     />
                     <Button 
@@ -362,7 +448,7 @@ const PaperPage = () => {
                 </h3>
               </div>
               <CardContent className="p-2">
-                {paper.timestamps.map((ts, idx) => (
+                {paper.timestamps.map((ts: { time: string; label: string }, idx: number) => (
                   <button key={idx} className="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-50 flex items-center gap-4 transition-colors group">
                     <span className="text-primary font-bold bg-primary/5 px-2 py-0.5 rounded text-[10px]">{ts.time}</span>
                     <span className="text-sm text-slate-700 group-hover:text-primary font-semibold">{ts.label}</span>

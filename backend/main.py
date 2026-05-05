@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import os
 from db.database import init_db
-from routers import auth, content, community, users, students, admin
+from routers import auth, content, community, users, students, admin, notifications, reviews
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -55,6 +55,12 @@ app.include_router(community.router, prefix="/api/v1")
 
 # Admin-only CRUD for all platform content
 app.include_router(admin.router, prefix="/api/v1")
+
+# Notifications (any auth user)
+app.include_router(notifications.router, prefix="/api/v1")
+
+# Reviews/Testimonials
+app.include_router(reviews.router, prefix="/api/v1")
 
 # Static Files (PDFs)
 if not os.path.exists("uploads"):

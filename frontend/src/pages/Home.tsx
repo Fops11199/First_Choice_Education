@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Book, Users, ArrowUpRight, GraduationCap, ShieldCheck, Heart } from 'lucide-react';
+import { Play, Book, Users, ArrowUpRight, GraduationCap, ShieldCheck, Heart, Star, Quote } from 'lucide-react';
+import api from '../api/api';
 import { Link } from 'react-router-dom';
 
 const backgroundImages = [
@@ -12,7 +13,19 @@ const backgroundImages = [
 const Home = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
+  const [reviews, setReviews] = useState<any[]>([]);
+
   useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const res = await api.get('/reviews/');
+        setReviews(res.data);
+      } catch (err) {
+        console.error('Failed to fetch reviews', err);
+      }
+    };
+    fetchReviews();
+
     const interval = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % backgroundImages.length);
     }, 5000); // Change image every 5 seconds
@@ -170,6 +183,48 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Testimonials */}
+      {reviews.length > 0 && (
+        <section className="py-24 bg-slate-50 overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4">Student Success Stories</h2>
+              <p className="text-slate-500 font-medium">Join thousands of students who have already transformed their GCE preparation.</p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              {reviews.map((review, i) => (
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  key={review.id} 
+                  className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm relative"
+                >
+                  <Quote className="absolute top-6 right-6 w-10 h-10 text-slate-50 opacity-50" />
+                  <div className="flex gap-1 mb-4">
+                    {[...Array(review.rating)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 text-accent fill-accent" />
+                    ))}
+                  </div>
+                  <p className="text-slate-600 font-medium leading-relaxed mb-6 italic">"{review.content}"</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shadow-inner">
+                      {review.full_name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">{review.full_name}</p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">GCE Candidate</p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Community Callout */}
       <section className="bg-white py-16 md:py-24 border-t border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -210,7 +265,7 @@ const FeatureCard = ({ icon, title, desc }: { icon: React.ReactNode, title: stri
     {/* Card Content */}
     <div className="relative h-full bg-white border border-slate-100 rounded-3xl p-8 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 flex flex-col z-10">
       <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-primary group-hover:text-white transition-all duration-300 text-primary">
-        {React.cloneElement(icon as React.ReactElement, { className: "w-7 h-7" })}
+        {React.cloneElement(icon as React.ReactElement<any>, { className: "w-7 h-7" })}
       </div>
       <h3 className="text-2xl font-black text-deep-brown mb-3 tracking-tight">{title}</h3>
       <p className="text-base text-slate-600 leading-relaxed mb-8 flex-1">{desc}</p>
