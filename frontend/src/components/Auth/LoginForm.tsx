@@ -22,14 +22,13 @@ const LoginForm = () => {
     setError('');
 
     try {
-      // Create form data for OAuth2 password flow
-      const formData = new FormData();
-      formData.append('username', email);
-      formData.append('password', password);
+      const loginData = new URLSearchParams();
+      loginData.append('username', email);
+      loginData.append('password', password);
 
-      const response = await api.post('/auth/login', formData, {
+      const response = await api.post('/auth/login', loginData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
       });
 
@@ -51,45 +50,7 @@ const LoginForm = () => {
     }
   };
 
-  useEffect(() => {
-    /* global google */
-    if (window.google) {
-      window.google.accounts.id.initialize({
-        client_id: "776425653026-oj7ttrf7ovqs3v73sgism57akl8s00dp.apps.googleusercontent.com",
-        callback: handleGoogleSuccess
-      });
-      window.google.accounts.id.renderButton(
-        document.getElementById("googleSignInDiv"),
-        { theme: "outline", size: "large", width: "100%", shape: "rectangular" }
-      );
-    }
-  }, []);
 
-  const handleGoogleSuccess = async (response: any) => {
-    setIsLoading(true);
-    setError('');
-    try {
-      const res = await api.post('/auth/google', {
-        credential: response.credential
-      });
-      
-      const { access_token, user, onboarding_required } = res.data;
-      login(access_token, user);
-      
-      if (onboarding_required) {
-        navigate('/onboarding');
-      } else if (user.role === 'admin') {
-        navigate('/admin_dashboard');
-      } else {
-        navigate('/dashboard');
-      }
-    } catch (err: any) {
-      console.error('Google login error:', err);
-      setError(err.response?.data?.detail || 'Google authentication failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen flex bg-slate-50">
@@ -223,20 +184,7 @@ const LoginForm = () => {
               Sign In to Dashboard
             </Button>
 
-            <div className="relative py-4">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200"></div>
-              </div>
-              <div className="relative flex justify-center">
-                <span className="bg-slate-50 px-4 text-xs font-bold uppercase tracking-widest text-slate-400">
-                  Or continue with
-                </span>
-              </div>
-            </div>
 
-            <div className="bg-white rounded-2xl border border-slate-200 p-1 hover:border-slate-300 transition-colors shadow-sm">
-              <div id="googleSignInDiv" className="w-full overflow-hidden rounded-xl flex justify-center"></div>
-            </div>
           </form>
 
           <p className="mt-10 text-center text-sm font-medium text-slate-500">

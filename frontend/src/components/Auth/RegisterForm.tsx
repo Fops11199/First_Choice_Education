@@ -17,15 +17,26 @@ const RegisterForm = () => {
     confirmPassword: ''
   });
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [name]: value
     }));
+    
+    // Clear field-specific error when user types
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,44 +72,21 @@ const RegisterForm = () => {
       navigate('/dashboard');
     } catch (err: any) {
       console.error('Registration error:', err);
-      setError(err.response?.data?.detail || 'Registration failed. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    /* global google */
-    if (window.google) {
-      window.google.accounts.id.initialize({
-        client_id: "776425653026-oj7ttrf7ovqs3v73sgism57akl8s00dp.apps.googleusercontent.com",
-        callback: handleGoogleSuccess
-      });
-      window.google.accounts.id.renderButton(
-        document.getElementById("googleRegisterDiv"),
-        { theme: "outline", size: "large", width: "100%", shape: "rectangular" }
-      );
-    }
-  }, []);
-
-  const handleGoogleSuccess = async (response: any) => {
-    setIsLoading(true);
-    setError('');
-    try {
-      const res = await api.post('/auth/google', {
-        credential: response.credential
-      });
+      const detail = err.response?.data?.detail;
       
-      const { access_token, user } = res.data;
-      login(access_token, user);
-      navigate('/dashboard');
-    } catch (err: any) {
-      console.error('Google login error:', err);
-      setError(err.response?.data?.detail || 'Google authentication failed');
+      if (typeof detail === 'object' && detail.field) {
+        // Handle specific field error from backend
+        setFieldErrors({ [detail.field]: detail.message });
+      } else {
+        // Handle generic error
+        setError(detail || 'Registration failed. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
+
+
 
   return (
     <div className="min-h-screen flex bg-slate-50">
@@ -218,6 +206,7 @@ const RegisterForm = () => {
                 onChange={handleChange}
                 placeholder="john@example.com"
                 required
+                error={fieldErrors.email}
                 className="bg-white border-slate-200 shadow-sm"
               />
               <Input
@@ -226,6 +215,7 @@ const RegisterForm = () => {
                 value={formData.whatsappNumber}
                 onChange={handleChange}
                 placeholder="6XX XXX XXX"
+                error={fieldErrors.whatsappNumber}
                 className="bg-white border-slate-200 shadow-sm"
               />
             </div>
@@ -274,20 +264,7 @@ const RegisterForm = () => {
               Create Account
             </Button>
 
-            <div className="relative py-4">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200"></div>
-              </div>
-              <div className="relative flex justify-center">
-                <span className="bg-slate-50 px-4 text-xs font-bold uppercase tracking-widest text-slate-400">
-                  Or sign up with
-                </span>
-              </div>
-            </div>
 
-            <div className="bg-white rounded-2xl border border-slate-200 p-1 hover:border-slate-300 transition-colors shadow-sm">
-              <div id="googleRegisterDiv" className="w-full overflow-hidden rounded-xl flex justify-center"></div>
-            </div>
           </form>
 
           <p className="mt-8 text-center text-sm font-medium text-slate-500 pb-8">

@@ -8,4 +8,12 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  server: {
+    host: true, // Listen on all network interfaces
+    port: 5173,
+    strictPort: true,
+    hmr: {
+      clientPort: 5173, // Ensure HMR uses the correct port
+    }
+  }
 })
