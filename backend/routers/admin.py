@@ -6,6 +6,7 @@ Covers: stats, users, full CRUD for levels/subjects/papers/videos/pdfs.
 """
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Request
 from sqlmodel import Session, select, func
+from sqlalchemy.orm import selectinload
 from db.database import get_session
 from models.user import User
 from models.content import Level, Subject, Paper, Video, PDF
@@ -52,7 +53,12 @@ def get_recent_subjects(
     current_user: User = Depends(require_admin)
 ):
     """5 most recently added subjects."""
-    statement = select(Subject).order_by(Subject.id.desc()).limit(5)
+    statement = (
+        select(Subject)
+        .options(selectinload(Subject.level), selectinload(Subject.papers))
+        .order_by(Subject.id.desc())
+        .limit(5)
+    )
     subjects = db.exec(statement).all()
     return [
         {
@@ -145,10 +151,13 @@ def list_subjects(
     db: Session = Depends(get_session),
     current_user: User = Depends(require_admin)
 ):
+    statement = (
+        select(Subject)
+        .options(selectinload(Subject.level), selectinload(Subject.papers))
+    )
     if level_id:
-        subjects = db.exec(select(Subject).where(Subject.level_id == level_id)).all()
-    else:
-        subjects = db.exec(select(Subject)).all()
+        statement = statement.where(Subject.level_id == level_id)
+    subjects = db.exec(statement).all()
 
     results = []
     for sub in subjects:
@@ -217,18 +226,22 @@ def list_papers(
     db: Session = Depends(get_session),
     current_user: User = Depends(require_admin)
 ):
+    video_counts = dict(db.exec(select(Video.paper_id, func.count(Video.id)).group_by(Video.paper_id)).all())
+    pdf_counts = dict(db.exec(select(PDF.paper_id, func.count(PDF.id)).group_by(PDF.paper_id)).all())
+
+    statement = select(Paper)
     if subject_id:
-        papers = db.exec(select(Paper).where(Paper.subject_id == subject_id)).all()
-    else:
-        papers = db.exec(select(Paper)).all()
+        statement = statement.where(Paper.subject_id == subject_id)
+    papers = db.exec(statement).all()
+
     return [
         {
             "id": str(p.id),
             "year": p.year,
             "paper_type": p.paper_type,
             "subject_id": str(p.subject_id),
-            "video_count": len(p.videos),
-            "pdf_count": len(p.pdfs),
+            "video_count": video_counts.get(p.id, 0),
+            "pdf_count": pdf_counts.get(p.id, 0),
         }
         for p in papers
     ]

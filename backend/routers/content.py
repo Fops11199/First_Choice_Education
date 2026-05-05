@@ -5,9 +5,10 @@ READ-ONLY. All endpoints require authentication.
 All write operations (create/update/delete) live in /admin/* instead.
 """
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, select
+from sqlmodel import Session, select, func
+from sqlalchemy.orm import selectinload
 from db.database import get_session
-from models.content import Level, Subject, Paper
+from models.content import Level, Subject, Paper, Video, PDF
 from models.user import User
 from schemas.content import LevelResponseSchema, SubjectResponseSchema
 from core.security import require_user
@@ -35,10 +36,13 @@ def get_subjects(
     current_user: User = Depends(require_user)
 ):
     """List all subjects, optionally filtered by level."""
+    # Single query: JOIN level + eager-load papers to avoid N+1
+    statement = (
+        select(Subject)
+        .options(selectinload(Subject.level), selectinload(Subject.papers))
+    )
     if level_id:
-        statement = select(Subject).where(Subject.level_id == level_id)
-    else:
-        statement = select(Subject)
+        statement = statement.where(Subject.level_id == level_id)
     subjects = db.exec(statement).all()
 
     results = []
@@ -57,9 +61,30 @@ def get_papers_for_subject(
     current_user: User = Depends(require_user)
 ):
     """Get all papers for a specific subject (sub-resource pattern)."""
-    subject = db.get(Subject, subject_id)
+    # Eager-load level to avoid extra query for subject.level.name
+    subject = db.exec(
+        select(Subject)
+        .options(selectinload(Subject.level))
+        .where(Subject.id == subject_id)
+    ).first()
     if not subject:
         raise HTTPException(status_code=404, detail="Subject not found")
+
+    # COUNT subqueries — 1 query for all video counts, 1 for all pdf counts
+    video_counts = dict(
+        db.exec(
+            select(Video.paper_id, func.count(Video.id))
+            .where(Video.paper_id.in_(select(Paper.id).where(Paper.subject_id == subject_id)))
+            .group_by(Video.paper_id)
+        ).all()
+    )
+    pdf_counts = dict(
+        db.exec(
+            select(PDF.paper_id, func.count(PDF.id))
+            .where(PDF.paper_id.in_(select(Paper.id).where(Paper.subject_id == subject_id)))
+            .group_by(PDF.paper_id)
+        ).all()
+    )
 
     papers = db.exec(
         select(Paper).where(Paper.subject_id == subject_id)
@@ -74,8 +99,8 @@ def get_papers_for_subject(
                 "id": str(p.id),
                 "year": p.year,
                 "paper_type": p.paper_type,
-                "video_count": len(p.videos),
-                "pdf_count": len(p.pdfs),
+                "video_count": video_counts.get(p.id, 0),
+                "pdf_count": pdf_counts.get(p.id, 0),
             }
             for p in papers
         ]
@@ -90,7 +115,17 @@ def get_paper(
     current_user: User = Depends(require_user)
 ):
     """Get a single paper with its videos and PDFs."""
-    paper = db.get(Paper, paper_id)
+    # selectinload fetches subject, subject.level, videos, and pdfs
+    # in 4 total queries instead of potentially dozens of lazy loads
+    paper = db.exec(
+        select(Paper)
+        .options(
+            selectinload(Paper.videos),
+            selectinload(Paper.pdfs),
+            selectinload(Paper.subject).selectinload(Subject.level),
+        )
+        .where(Paper.id == paper_id)
+    ).first()
     if not paper:
         raise HTTPException(status_code=404, detail="Paper not found")
 

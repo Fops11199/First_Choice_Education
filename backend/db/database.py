@@ -4,7 +4,13 @@ from core.config import settings
 # Import models here to register them with SQLModel.metadata
 from models import user, content, community, progress
 
-engine = create_engine(settings.DATABASE_URL, echo=False)
+engine = create_engine(
+    settings.DATABASE_URL, 
+    echo=False,
+    pool_size=20,
+    max_overflow=10,
+    pool_pre_ping=True
+)
 
 def init_db():
     SQLModel.metadata.create_all(engine)

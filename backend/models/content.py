@@ -11,13 +11,13 @@ class Level(SQLModel, table=True):
 class Subject(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str
-    level_id: uuid.UUID = Field(foreign_key="level.id")
+    level_id: uuid.UUID = Field(foreign_key="level.id", index=True)
     level: Level = Relationship(back_populates="subjects")
     papers: List["Paper"] = Relationship(back_populates="subject")
 
 class Paper(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    subject_id: uuid.UUID = Field(foreign_key="subject.id")
+    subject_id: uuid.UUID = Field(foreign_key="subject.id", index=True)
     year: int
     paper_type: str # Paper 1, Paper 2, Paper 3
     subject: Subject = Relationship(back_populates="papers")
@@ -26,8 +26,8 @@ class Paper(SQLModel, table=True):
 
 class Video(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    paper_id: uuid.UUID = Field(foreign_key="paper.id")
-    creator_id: uuid.UUID = Field(foreign_key="user.id")
+    paper_id: uuid.UUID = Field(foreign_key="paper.id", index=True)
+    creator_id: uuid.UUID = Field(foreign_key="user.id", index=True)
     youtube_id: str
     timestamps: Optional[str] = None # JSON string or text
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -35,7 +35,7 @@ class Video(SQLModel, table=True):
 
 class PDF(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    paper_id: uuid.UUID = Field(foreign_key="paper.id")
+    paper_id: uuid.UUID = Field(foreign_key="paper.id", index=True)
     file_url: str
     pdf_type: str # question, answer
     created_at: datetime = Field(default_factory=datetime.utcnow)
