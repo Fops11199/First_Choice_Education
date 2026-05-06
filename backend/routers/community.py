@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session, select
+from sqlmodel import Session, select, func
 from db.database import get_session
 from models.community import Thread, Reply, Community, CommunityMember
 from models.notification import Notification
@@ -10,6 +10,7 @@ from pydantic import BaseModel
 import uuid
 from datetime import datetime
 import traceback
+import bleach
 
 router = APIRouter(prefix="/community", tags=["community"])
 
@@ -72,24 +73,34 @@ class CommentCreate(BaseModel):
 
 @router.get("/", response_model=List[CommunityResponse])
 def get_communities(db: Session = Depends(get_session)):
-    """List all public communities."""
-    statement = select(Community).where(Community.is_private == False)
-    communities = db.exec(statement).all()
-    
-    results = []
-    for c in communities:
-        member_count = len(c.memberships)
-        results.append(CommunityResponse(
+    """List all public communities. Single query with member count via subquery."""
+    # One query: communities + member counts in a single aggregated JOIN
+    member_count_subq = (
+        select(CommunityMember.community_id, func.count(CommunityMember.user_id).label("member_count"))
+        .where(CommunityMember.status == "active")
+        .group_by(CommunityMember.community_id)
+        .subquery()
+    )
+    statement = (
+        select(Community, func.coalesce(member_count_subq.c.member_count, 0).label("member_count"))
+        .outerjoin(member_count_subq, Community.id == member_count_subq.c.community_id)
+        .where(Community.is_private == False)
+    )
+    rows = db.exec(statement).all()
+
+    return [
+        CommunityResponse(
             id=c.id,
             name=c.name,
             description=c.description,
             category=c.category,
             is_private=c.is_private,
             creator_id=c.creator_id,
-            member_count=member_count,
+            member_count=count,
             created_at=c.created_at.isoformat()
-        ))
-    return results
+        )
+        for c, count in rows
+    ]
 
 @router.post("/", response_model=CommunityResponse, status_code=status.HTTP_201_CREATED)
 def create_community(
@@ -291,7 +302,7 @@ def get_community_threads(
     db: Session = Depends(get_session),
     current_user: User = Depends(require_user)
 ):
-    """List threads in a community. Checks membership if private."""
+    """List threads in a community. Single JOIN query — no N+1."""
     community = db.get(Community, community_id)
     if not community:
         raise HTTPException(status_code=404, detail="Community not found")
@@ -306,23 +317,40 @@ def get_community_threads(
         ).first()
         if not membership:
             raise HTTPException(status_code=403, detail="Private community access required")
-            
-    statement = select(Thread).where(Thread.community_id == community_id).order_by(Thread.created_at.desc())
-    threads = db.exec(statement).all()
-    
-    results = []
-    for t in threads:
-        author = db.get(User, t.author_id)
-        results.append(ThreadResponse(
+
+    # COUNT subquery for reply counts — avoids loading all reply objects
+    reply_count_subq = (
+        select(Reply.thread_id, func.count(Reply.id).label("reply_count"))
+        .where(Reply.thread_id.in_(
+            select(Thread.id).where(Thread.community_id == community_id)
+        ))
+        .group_by(Reply.thread_id)
+        .subquery()
+    )
+
+    # Single query: threads + their authors + reply counts
+    statement = (
+        select(Thread, User, func.coalesce(reply_count_subq.c.reply_count, 0).label("reply_count"))
+        .join(User, Thread.author_id == User.id)
+        .outerjoin(reply_count_subq, Thread.id == reply_count_subq.c.thread_id)
+        .where(Thread.community_id == community_id)
+        .order_by(Thread.created_at.desc())
+        .limit(100)  # Safety limit
+    )
+    rows = db.exec(statement).all()
+
+    return [
+        ThreadResponse(
             id=t.id,
             community_id=t.community_id,
             title=t.title,
-            author_name=author.full_name if author else "Unknown",
-            author_role=author.role if author else "student",
-            reply_count=len(t.replies),
+            author_name=u.full_name,
+            author_role=u.role,
+            reply_count=count,
             created_at=t.created_at.isoformat()
-        ))
-    return results
+        )
+        for t, u, count in rows
+    ]
 
 @router.get("/threads/{thread_id}", response_model=ThreadResponse)
 def get_thread_detail(
@@ -330,19 +358,26 @@ def get_thread_detail(
     db: Session = Depends(get_session),
     current_user: User = Depends(require_user)
 ):
-    """Get a single thread's details."""
-    thread = db.get(Thread, thread_id)
-    if not thread:
+    """Get a single thread's details — JOIN to avoid separate user lookup."""
+    row = db.exec(
+        select(Thread, User, func.count(Reply.id).label("reply_count"))
+        .join(User, Thread.author_id == User.id)
+        .outerjoin(Reply, Reply.thread_id == Thread.id)
+        .where(Thread.id == thread_id)
+        .group_by(Thread.id, User.id)
+    ).first()
+
+    if not row:
         raise HTTPException(status_code=404, detail="Thread not found")
-        
-    author = db.get(User, thread.author_id)
+
+    thread, author, reply_count = row
     return ThreadResponse(
         id=thread.id,
         community_id=thread.community_id,
         title=thread.title,
-        author_name=author.full_name if author else "Unknown",
-        author_role=author.role if author else "student",
-        reply_count=len(thread.replies),
+        author_name=author.full_name,
+        author_role=author.role,
+        reply_count=reply_count,
         created_at=thread.created_at.isoformat()
     )
 
@@ -366,10 +401,10 @@ def create_thread(
         if not membership:
             raise HTTPException(status_code=403, detail="Must be a member to post")
             
-        # 2. Create Thread object
+        # 2. Create Thread object (Sanitized)
         thread = Thread(
             community_id=thread_data.community_id,
-            title=thread_data.title,
+            title=bleach.clean(thread_data.title, tags=[], strip=True),
             author_id=current_user.id
         )
         
@@ -427,36 +462,44 @@ def delete_thread(
 
 @router.get("/threads/{thread_id}/replies", response_model=List[ReplyResponse])
 def get_replies(thread_id: uuid.UUID, db: Session = Depends(get_session)):
+    """Fetch all replies in a thread with parents — no N+1 queries."""
+    # 1. Fetch all replies + their authors in one JOIN
     statement = (
         select(Reply, User)
         .join(User, Reply.author_id == User.id)
         .where(Reply.thread_id == thread_id)
         .order_by(Reply.created_at)
+        .limit(500)  # Safety limit
     )
     results = db.exec(statement).all()
-    
-    final_replies = []
-    for reply, user in results:
-        parent_content = None
-        parent_author = None
-        if reply.parent_id:
-            parent = db.get(Reply, reply.parent_id)
-            if parent:
-                parent_content = parent.content
-                parent_user = db.get(User, parent.author_id)
-                parent_author = parent_user.full_name if parent_user else "Unknown"
-        
-        final_replies.append(ReplyResponse(
+
+    # 2. Collect all unique parent_ids that exist
+    parent_ids = {reply.parent_id for reply, _ in results if reply.parent_id}
+
+    # 3. Batch-load all parent replies + their authors in ONE query
+    parent_map: dict = {}  # parent_id -> (content, author_name)
+    if parent_ids:
+        parent_rows = db.exec(
+            select(Reply, User)
+            .join(User, Reply.author_id == User.id)
+            .where(Reply.id.in_(parent_ids))
+        ).all()
+        parent_map = {pr.id: (pr.content, pu.full_name) for pr, pu in parent_rows}
+
+    # 4. Build response using pre-loaded data
+    return [
+        ReplyResponse(
             id=reply.id,
             content=reply.content,
             author_name=user.full_name,
             author_role=user.role,
             created_at=reply.created_at.isoformat(),
             parent_id=reply.parent_id,
-            parent_content=parent_content,
-            parent_author=parent_author
-        ))
-    return final_replies
+            parent_content=parent_map.get(reply.parent_id, (None, None))[0] if reply.parent_id else None,
+            parent_author=parent_map.get(reply.parent_id, (None, None))[1] if reply.parent_id else None,
+        )
+        for reply, user in results
+    ]
 
 @router.post("/threads/{thread_id}/replies", response_model=ReplyResponse, status_code=status.HTTP_201_CREATED)
 def create_reply(
@@ -472,39 +515,33 @@ def create_reply(
     reply = Reply(
         thread_id=thread_id,
         author_id=current_user.id,
-        content=reply_data.content,
+        content=bleach.clean(reply_data.content, tags=[], strip=True),
         parent_id=reply_data.parent_id
     )
     db.add(reply)
     
-    # Handle parent info for response
+    # Handle parent info — fetch once, reuse for both response and notification logic
     parent_content = None
     parent_author = None
-    if reply.parent_id:
-        parent = db.get(Reply, reply.parent_id)
-        if parent:
-            parent_content = parent.content
-            parent_user = db.get(User, parent.author_id)
-            parent_author = parent_user.full_name if parent_user else "Unknown"
-            
-            # Notify Parent Author (if not self)
-            if parent.author_id != current_user.id:
-                db.add(Notification(
-                    user_id=parent.author_id,
-                    message=f"{current_user.full_name} replied to your comment in {thread.title}",
-                    type="reply",
-                    link=f"/community/thread/{thread_id}"
-                ))
+    parent_obj = db.get(Reply, reply.parent_id) if reply.parent_id else None
 
-    # Notify Thread Author (if not replying to self and not already notified as parent)
-    if thread.author_id != current_user.id:
-        # Check if we already notified the thread author via parent logic
-        already_notified = False
-        if reply.parent_id:
-            parent = db.get(Reply, reply.parent_id)
-            if parent and parent.author_id == thread.author_id:
-                already_notified = True
+    if parent_obj:
+        parent_content = parent_obj.content
+        parent_user = db.get(User, parent_obj.author_id)
+        parent_author = parent_user.full_name if parent_user else "Unknown"
         
+        # Notify Parent Author (if not self)
+        if parent_obj.author_id != current_user.id:
+            db.add(Notification(
+                user_id=parent_obj.author_id,
+                message=f"{current_user.full_name} replied to your comment in {thread.title}",
+                type="reply",
+                link=f"/community/thread/{thread_id}"
+            ))
+
+    # Notify Thread Author — only if not already notified via parent
+    if thread.author_id != current_user.id:
+        already_notified = parent_obj and parent_obj.author_id == thread.author_id
         if not already_notified:
             db.add(Notification(
                 user_id=thread.author_id,
@@ -584,11 +621,11 @@ def post_paper_comment(
         db.commit()
         db.refresh(thread)
         
-    # 3. Create the reply (comment)
+    # 3. Create the reply (comment) - Sanitized
     reply = Reply(
         thread_id=thread.id,
         author_id=current_user.id,
-        content=comment.content,
+        content=bleach.clean(comment.content, tags=[], strip=True),
         parent_id=comment.parent_id
     )
     db.add(reply)

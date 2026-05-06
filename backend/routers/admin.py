@@ -498,7 +498,14 @@ async def upload_file(
     file: UploadFile = File(...),
     current_user: User = Depends(require_admin)
 ):
-    """Upload a file via storage service (R2 or Local)."""
+    """Upload a file via storage service (R2 or Local) with type validation."""
+    ALLOWED_TYPES = ["application/pdf", "image/png", "image/jpeg", "image/jpg"]
+    if file.content_type not in ALLOWED_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File type {file.content_type} not allowed. Only PDFs and images (PNG/JPG) are permitted."
+        )
+    
     try:
         public_url = await storage_service.upload_file(file.file, file.filename)
         return {"url": public_url, "filename": file.filename}

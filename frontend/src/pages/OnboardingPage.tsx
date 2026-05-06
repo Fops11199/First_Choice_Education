@@ -71,7 +71,7 @@ const OnboardingPage = () => {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-xl bg-white rounded-3xl shadow-2xl overflow-hidden relative z-10 border border-slate-100"
+        className="w-full max-w-3xl bg-white md:rounded-3xl shadow-2xl overflow-hidden relative z-10 border border-slate-100 min-h-[100vh] md:min-h-0"
       >
         <div className="bg-slate-900 p-8 text-white relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl transform translate-x-1/2 -translate-y-1/2"></div>
@@ -94,19 +94,29 @@ const OnboardingPage = () => {
           )}
 
           <div className="space-y-6">
-            <div className="relative">
-              <div className="absolute top-1/2 -translate-y-1/2 left-4">
-                <Phone className="w-5 h-5 text-slate-400" />
+            <div className="space-y-1.5">
+               <label className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+                <Phone className="w-3.5 h-3.5" />
+                WhatsApp Number
+              </label>
+              <div className="flex gap-2">
+                <select className="w-32 px-4 py-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm appearance-none">
+                  <option value="+237">🇨🇲 +237</option>
+                  <option value="+234">🇳🇬 +234</option>
+                  <option value="+1">🇺🇸 +1</option>
+                  <option value="+44">🇬🇧 +44</option>
+                </select>
+                <div className="relative flex-1">
+                  <Input
+                    name="whatsappNumber"
+                    value={formData.whatsappNumber}
+                    onChange={handleChange}
+                    placeholder="6XX XXX XXX"
+                    required
+                    className="pl-4 bg-slate-50 border-slate-200 shadow-sm w-full"
+                  />
+                </div>
               </div>
-              <Input
-                label="WhatsApp Number"
-                name="whatsappNumber"
-                value={formData.whatsappNumber}
-                onChange={handleChange}
-                placeholder="e.g. 6XX XXX XXX"
-                required
-                className="pl-12 bg-slate-50 border-slate-200 shadow-sm"
-              />
               <p className="text-[11px] text-slate-500 font-medium mt-1.5 ml-1">
                 We use this to connect you to your dedicated class group.
               </p>

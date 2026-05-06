@@ -1,12 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-    ArrowLeft, MessageSquare, Shield, 
-    Send, Loader2, Maximize2, Minimize2, 
-    ChevronRight, ChevronLeft, GraduationCap, 
-    MoreVertical, Info, FileText, Reply as ReplyIcon, X,
-    Play, Layout, FileSearch, CheckCircle2,
-    Eye, Monitor, Smartphone, Video
+    ArrowLeft, MessageSquare,
+    Send, FileText,
+    Play, Layout, Video, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/api';
@@ -16,7 +13,7 @@ import { toast } from 'sonner';
 const PaperPage = () => {
     const { paperId } = useParams();
     const navigate = useNavigate();
-    const { user: currentUser } = useAuth();
+    useAuth(); // keep context connected
     
     const [paper, setPaper] = useState<any>(null);
     const [comments, setComments] = useState<any[]>([]);

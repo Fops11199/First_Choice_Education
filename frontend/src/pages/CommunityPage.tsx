@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, Users, TrendingUp, Search, Plus, ArrowUpRight, MessageCircle, Loader2, X, Lock, Globe, Shield } from 'lucide-react';
+import { Users, TrendingUp, Search, Plus, Loader2, X, Lock, Globe, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/api';

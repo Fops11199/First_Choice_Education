@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Book, GraduationCap, ArrowRight, Star, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import api from '../api/api';
+import SEO from '../components/SEO';
 
 const LevelSelector = () => {
   const [levels, setLevels] = useState<any[]>([]);
@@ -22,6 +23,10 @@ const LevelSelector = () => {
 
   return (
     <div className="pt-24 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <SEO 
+        title="Choose Your GCE Level"
+        description="Select between GCE Ordinary Level (O-Level) or Advanced Level (A-Level) to access specialized papers and solutions."
+      />
       <div className="text-center max-w-3xl mx-auto mb-12">
         <div className="flex justify-center items-center gap-2 mb-3">
           <span className="w-8 h-1 bg-accent"></span>

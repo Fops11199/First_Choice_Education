@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 /**
@@ -11,7 +11,7 @@ export const ProtectedRoute = ({
   roles, 
   adminOnly = false 
 }: { 
-  children: React.ReactNode, 
+  children?: React.ReactNode, 
   roles?: string[],
   adminOnly?: boolean
 }) => {
@@ -41,14 +41,14 @@ export const ProtectedRoute = ({
     return <Navigate to={redirectPath} replace />;
   }
 
-  return <>{children}</>;
+  return children ? <>{children}</> : <Outlet />;
 };
 
 /**
  * GuestRoute: Only accessible by users who are NOT logged in.
  * Redirects to /dashboard (or /admin_dashboard) if already authenticated.
  */
-export const GuestRoute = ({ children }: { children: React.ReactNode }) => {
+export const GuestRoute = ({ children }: { children?: React.ReactNode }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -64,7 +64,7 @@ export const GuestRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to={redirectPath} replace />;
   }
 
-  return <>{children}</>;
+  return children ? <>{children}</> : <Outlet />;
 };
 
 export default ProtectedRoute;

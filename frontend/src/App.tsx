@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Toaster } from 'sonner';
 import { AnimatePresence } from 'framer-motion';
 import Preloader from './components/ui/Preloader';
+import ScrollToTop from './components/ScrollToTop';
 
 // Layouts
 import PublicLayout from './layouts/PublicLayout';
@@ -27,6 +28,7 @@ import PaperPage from './pages/PaperPage';
 import CommunityPage from './pages/CommunityPage';
 import CommunityGroupPage from './pages/CommunityGroupPage';
 import ThreadDetailPage from './pages/ThreadDetail';
+import AboutPage from './pages/AboutPage';
 
 // Dashboard Pages
 import StudentDashboard from './pages/Dashboard';
@@ -38,6 +40,9 @@ import AdminSubjects from './pages/admin/AdminSubjects';
 import AdminPapers from './pages/admin/AdminPapers';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminTestimonials from './pages/admin/AdminTestimonials';
+
+// Tutor Pages
+import TutorDashboard from './pages/tutor/TutorDashboard';
 
 function App() {
   const [isAppLoading, setIsAppLoading] = useState(true);
@@ -52,6 +57,7 @@ function App() {
 
   return (
     <Router>
+      <ScrollToTop />
       <Toaster position="top-right" richColors expand={true} />
       
       <AnimatePresence mode="wait">
@@ -63,25 +69,32 @@ function App() {
             <Route element={<PublicLayout />}>
               <Route path="/" element={<LandingPage />} />
               <Route path="/levels" element={<GCELevelsPage />} />
-              <Route path="/subjects" element={<SubjectsPage />} />
+              <Route path="/about" element={<AboutPage />} />
+            </Route>
+
+            {/* Clean Layout (No Footer) - Auth & Critical Interaction */}
+            <Route element={<CleanLayout />}>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
-            </Route>
-
-            {/* Clean Interactive Layout (No Footer) */}
-            <Route element={<CleanLayout />}>
-               <Route path="/subjects/:subjectId/papers" element={<SubjectPapersPage />} />
-               <Route path="/papers/:paperId" element={<PaperPage />} />
-               <Route path="/community" element={<CommunityPage />} />
-               <Route path="/community/group/:groupId" element={<CommunityGroupPage />} />
-               <Route path="/community/thread/:threadId" element={<ThreadDetailPage />} />
+              <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
+              
+              {/* These are now protected to ensure logged out users don't access them */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/subjects" element={<SubjectsPage />} />
+                <Route path="/subjects/:subjectId/papers" element={<SubjectPapersPage />} />
+                <Route path="/papers/:paperId" element={<PaperPage />} />
+                <Route path="/community" element={<CommunityPage />} />
+                <Route path="/community/group/:groupId" element={<CommunityGroupPage />} />
+                <Route path="/community/thread/:threadId" element={<ThreadDetailPage />} />
+              </Route>
             </Route>
 
             {/* Student/Tutor Dashboard Routes */}
             <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
               <Route path="/dashboard" element={<StudentDashboard />} />
+              <Route path="/tutor_dashboard" element={<TutorDashboard />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
 
@@ -94,9 +107,6 @@ function App() {
               <Route path="testimonials" element={<AdminTestimonials />} />
             </Route>
 
-            {/* Onboarding */}
-            <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
-            
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         )}

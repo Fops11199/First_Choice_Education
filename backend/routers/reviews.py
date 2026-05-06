@@ -7,6 +7,7 @@ from core.security import require_user, require_admin
 from typing import List, Optional
 from pydantic import BaseModel
 import uuid
+import bleach
 
 router = APIRouter(prefix="/reviews", tags=["reviews"])
 
@@ -49,7 +50,7 @@ def post_review(
     new_review = Review(
         user_id=current_user.id,
         rating=review_data.rating,
-        content=review_data.content
+        content=bleach.clean(review_data.content, tags=[], strip=True)
     )
     db.add(new_review)
     db.commit()

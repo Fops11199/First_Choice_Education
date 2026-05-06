@@ -3,9 +3,9 @@ import Navbar from '../components/Navbar';
 
 const CleanLayout = () => {
   return (
-    <div className="min-h-screen bg-white flex flex-col h-screen overflow-hidden">
+    <div className="min-h-screen bg-white flex flex-col">
       <Navbar />
-      <main className="flex-grow pt-16 h-full relative">
+      <main className="flex-grow pt-16 relative">
         <Outlet />
       </main>
     </div>

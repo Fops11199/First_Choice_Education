@@ -281,9 +281,9 @@ const AdminUsers = () => {
               <h2 className="text-3xl font-bold text-slate-800 mb-3 tracking-tight">Privileged Account</h2>
               <p className="text-base font-medium text-slate-500 mb-10">Provision a new administrator or tutor account.</p>
               <form onSubmit={handleCreateUser} className="space-y-6">
-                <InputGroup label="Legal Full Name" value={newUser.full_name} onChange={(v) => setNewUser({...newUser, full_name: v})} />
-                <InputGroup label="Email Identifier" type="email" value={newUser.email} onChange={(v) => setNewUser({...newUser, email: v})} />
-                <InputGroup label="Security Password" type="password" value={newUser.password} onChange={(v) => setNewUser({...newUser, password: v})} />
+                <InputGroup label="Legal Full Name" value={newUser.full_name} onChange={(v: string) => setNewUser({...newUser, full_name: v})} />
+                <InputGroup label="Email Identifier" type="email" value={newUser.email} onChange={(v: string) => setNewUser({...newUser, email: v})} />
+                <InputGroup label="Security Password" type="password" value={newUser.password} onChange={(v: string) => setNewUser({...newUser, password: v})} />
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-1">Designated Role</label>
                   <div className="relative">
@@ -365,7 +365,7 @@ const ModalWrapper = ({ children, onClose }: any) => (
   </div>
 );
 
-const InputGroup = ({ label, type = "text", value, onChange }: any) => (
+const InputGroup = ({ label, type = "text", value, onChange }: { label: string, type?: string, value: string, onChange: (v: string) => void }) => (
   <div className="space-y-2">
     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-1">{label}</label>
     <input type={type} required value={value} onChange={(e) => onChange(e.target.value)} className="w-full px-6 py-4 bg-blue-50/20 border border-blue-100 rounded-2xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all font-semibold text-slate-700" />

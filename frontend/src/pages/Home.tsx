@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Book, Users, ArrowUpRight, GraduationCap, ShieldCheck, Heart, Star, Quote } from 'lucide-react';
 import api from '../api/api';
 import { Link } from 'react-router-dom';
+import SEO from '../components/SEO';
+
+import { useAuth } from '../context/AuthContext';
 
 const backgroundImages = [
   "/classroom.png",
@@ -11,8 +14,8 @@ const backgroundImages = [
 ];
 
 const Home = () => {
+  const { user } = useAuth();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-
   const [reviews, setReviews] = useState<any[]>([]);
 
   useEffect(() => {
@@ -34,6 +37,10 @@ const Home = () => {
 
   return (
     <div className="flex flex-col">
+      <SEO 
+        title="Master the Cameroon GCE"
+        description="The ultimate hub for Cameroon GCE Ordinary and Advanced Level preparation. Get expert video solutions for every past paper."
+      />
       {/* Hero Section with Modern Glassmorphism */}
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-20">
         
@@ -67,29 +74,54 @@ const Home = () => {
             >
               <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
                 <span className="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
-                <span className="text-xs font-bold tracking-widest text-white uppercase">Cameroon's #1 GCE Hub</span>
-              </div>
-              
-              <h1 className="text-5xl md:text-7xl font-black text-white mb-6 leading-[1.1] tracking-tight">
-                Master the GCE. <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-light to-accent">
-                  The First Choice Way.
+                <span className="text-xs font-bold tracking-widest text-white uppercase">
+                  {user ? `Welcome back, ${user.full_name.split(' ')[0]}` : "Cameroon's #1 GCE Hub"}
                 </span>
-              </h1>
-              
-              <p className="text-lg md:text-xl text-slate-300 mb-10 max-w-xl leading-relaxed font-medium">
-                Expert video solutions for every past paper. Join thousands of students in the most trusted e-learning community in Cameroon.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/register" className="btn-primary py-4 px-8 text-lg hover:scale-105 transition-transform shadow-[0_0_30px_rgba(206,32,41,0.4)]">
-                  Start Learning Now
-                </Link>
-                <Link to="/levels" className="px-8 py-4 bg-white/5 backdrop-blur-md text-white font-semibold rounded-xl border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all flex items-center justify-center gap-2">
-                  <Book className="w-5 h-5" />
-                  Browse Papers
-                </Link>
               </div>
+              
+              {user ? (
+                <>
+                  <h1 className="text-5xl md:text-7xl font-black text-white mb-6 leading-[1.1] tracking-tight">
+                    Ready to <br />
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-light to-accent">
+                      Continue?
+                    </span>
+                  </h1>
+                  <p className="text-lg md:text-xl text-slate-300 mb-10 max-w-xl leading-relaxed font-medium">
+                    You're doing great! Jump back into your subjects and keep that streak alive. Every paper solved is a step closer to success.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Link to="/dashboard" className="btn-primary py-4 px-8 text-lg hover:scale-105 transition-transform shadow-[0_0_30px_rgba(206,32,41,0.4)]">
+                      Go to Dashboard
+                    </Link>
+                    <Link to="/subjects" className="px-8 py-4 bg-white/5 backdrop-blur-md text-white font-semibold rounded-xl border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all flex items-center justify-center gap-2">
+                      <Book className="w-5 h-5" />
+                      Browse Subjects
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h1 className="text-5xl md:text-7xl font-black text-white mb-6 leading-[1.1] tracking-tight">
+                    Master the GCE. <br />
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-light to-accent">
+                      The First Choice Way.
+                    </span>
+                  </h1>
+                  <p className="text-lg md:text-xl text-slate-300 mb-10 max-w-xl leading-relaxed font-medium">
+                    Expert video solutions for every past paper. Join thousands of students in the most trusted e-learning community in Cameroon.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Link to="/register" className="btn-primary py-4 px-8 text-lg hover:scale-105 transition-transform shadow-[0_0_30px_rgba(206,32,41,0.4)]">
+                      Start Learning Now
+                    </Link>
+                    <Link to="/levels" className="px-8 py-4 bg-white/5 backdrop-blur-md text-white font-semibold rounded-xl border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all flex items-center justify-center gap-2">
+                      <Book className="w-5 h-5" />
+                      Browse Papers
+                    </Link>
+                  </div>
+                </>
+              )}
             </motion.div>
 
             {/* Right Side - Floating Glass Cards */}
@@ -226,33 +258,35 @@ const Home = () => {
       )}
 
       {/* Community Callout */}
-      <section className="bg-white py-16 md:py-24 border-t border-slate-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-10 bg-primary/5 rounded-2xl p-8 md:p-12 border border-primary/10">
-            <div className="max-w-lg">
-              <h2 className="text-3xl font-bold text-deep-brown mb-4">The Community Hub.</h2>
-              <p className="text-base text-slate-600 mb-6">
-                Join the largest network of GCE students in Cameroon. Share resources, ask questions, and get help from expert moderators.
-              </p>
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-primary" />
-                  <span className="font-semibold text-sm text-deep-brown">Verified Solutions</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Heart className="w-5 h-5 text-cam-red" />
-                  <span className="font-semibold text-sm text-deep-brown">Student-Centered</span>
+      {!user && (
+        <section className="bg-white py-16 md:py-24 border-t border-slate-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-10 bg-primary/5 rounded-2xl p-8 md:p-12 border border-primary/10">
+              <div className="max-w-lg">
+                <h2 className="text-3xl font-bold text-deep-brown mb-4">The Community Hub.</h2>
+                <p className="text-base text-slate-600 mb-6">
+                  Join the largest network of GCE students in Cameroon. Share resources, ask questions, and get help from expert moderators.
+                </p>
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-primary" />
+                    <span className="font-semibold text-sm text-deep-brown">Verified Solutions</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Heart className="w-5 h-5 text-cam-red" />
+                    <span className="font-semibold text-sm text-deep-brown">Student-Centered</span>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="w-full md:w-auto shrink-0">
-              <Link to="/register" className="btn-primary w-full md:w-auto py-4 px-10">
-                Join for Free
-              </Link>
+              <div className="w-full md:w-auto shrink-0">
+                <Link to="/register" className="btn-primary w-full md:w-auto py-4 px-10">
+                  Join for Free
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   );
 };
@@ -269,9 +303,9 @@ const FeatureCard = ({ icon, title, desc }: { icon: React.ReactNode, title: stri
       </div>
       <h3 className="text-2xl font-black text-deep-brown mb-3 tracking-tight">{title}</h3>
       <p className="text-base text-slate-600 leading-relaxed mb-8 flex-1">{desc}</p>
-      <div className="flex items-center gap-2 text-primary font-bold text-sm hover:gap-3 transition-all cursor-pointer mt-auto">
+      <Link to="/about" className="flex items-center gap-2 text-primary font-bold text-sm hover:gap-3 transition-all cursor-pointer mt-auto">
         Learn more <ArrowUpRight className="w-4 h-4" />
-      </div>
+      </Link>
     </div>
   </div>
 );

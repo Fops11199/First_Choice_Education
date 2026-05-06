@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, KeyRound, CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
+import { KeyRound, CheckCircle2, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../api/api';
 import { Input } from '../components/ui/Input';
@@ -16,7 +16,6 @@ const ResetPasswordPage = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
