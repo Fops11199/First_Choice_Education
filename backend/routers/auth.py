@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 from datetime import timedelta
@@ -23,10 +23,17 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+# Initialize a local limiter for documentation/IDE, 
+# but the one from app.state.limiter will be used at runtime.
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/register", response_model=UserResponseSchema, status_code=status.HTTP_201_CREATED)
-def register_user(user_in: UserCreateSchema, db: Session = Depends(get_session)):
+@limiter.limit("5/minute")
+def register_user(user_in: UserCreateSchema, request: Request, db: Session = Depends(get_session)):
     try:
         # Check if email exists
         statement = select(User).where(User.email == user_in.email)
@@ -70,7 +77,8 @@ def register_user(user_in: UserCreateSchema, db: Session = Depends(get_session))
         )
 
 @router.post("/login", response_model=TokenSchema)
-def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_session)):
+@limiter.limit("10/minute")
+def login_user(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_session)):
     try:
         statement = select(User).where(User.email == form_data.username)
         user = db.exec(statement).first()
@@ -120,7 +128,8 @@ class ResetPasswordRequest(BaseModel):
     new_password: str
 
 @router.post("/forgot-password")
-def forgot_password(req: ForgotPasswordRequest, db: Session = Depends(get_session)):
+@limiter.limit("3/minute")
+def forgot_password(req: ForgotPasswordRequest, request: Request, db: Session = Depends(get_session)):
     user = db.exec(select(User).where(User.email == req.email)).first()
     if not user:
         # We don't want to reveal if email exists or not for security

@@ -113,13 +113,13 @@ const Navbar = () => {
 
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center gap-4">
-            {user && <NotificationMenu />}
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="p-2 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors"
+              className="p-2 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors order-first"
             >
               {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
+            {user && <NotificationMenu />}
           </div>
         </div>
       </div>
@@ -139,11 +139,11 @@ const Navbar = () => {
             
             {/* The Actual Menu Drawer */}
             <motion.div
-              initial={{ x: '100%' }}
+              initial={{ x: '-100%' }}
               animate={{ x: 0 }}
-              exit={{ x: '100%' }}
+              exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="absolute top-0 right-0 bottom-0 w-[300px] bg-white shadow-2xl flex flex-col border-l border-blue-50"
+              className="absolute top-0 left-0 bottom-0 w-[300px] bg-white shadow-2xl flex flex-col border-r border-blue-50"
             >
               {/* Mobile Header inside Drawer */}
               <div className="h-16 px-6 border-b border-blue-50 flex items-center justify-between shrink-0">

@@ -365,7 +365,7 @@ const ModalWrapper = ({ children, onClose }: any) => (
   </div>
 );
 
-const InputGroup = ({ label, type = "text", value, onChange }: any) => (
+const InputGroup = ({ label, type = "text", value, onChange }: { label: string, type?: string, value: string, onChange: (v: string) => void }) => (
   <div className="space-y-2">
     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-1">{label}</label>
     <input type={type} required value={value} onChange={(e) => onChange(e.target.value)} className="w-full px-6 py-4 bg-blue-50/20 border border-blue-100 rounded-2xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all font-semibold text-slate-700" />

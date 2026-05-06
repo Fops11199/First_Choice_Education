@@ -75,7 +75,6 @@ const CommunityGroupPage = () => {
     };
 
 
-
     const handleApprove = async (userId: string) => {
         try {
             await api.post(`/community/${id}/approve/${userId}`);
