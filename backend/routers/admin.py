@@ -10,6 +10,8 @@ from sqlalchemy.orm import selectinload
 from db.database import get_session
 from models.user import User
 from models.content import Level, Subject, Paper, Video, PDF
+from models.review import Review
+from models.notification import Notification
 from schemas.content import (
     LevelBaseSchema, LevelResponseSchema,
     SubjectBaseSchema, SubjectResponseSchema,
@@ -19,11 +21,20 @@ from schemas.content import (
 )
 from schemas.user import UserRoleUpdateSchema, UserCreateAdminSchema
 from core.security import require_admin, get_password_hash
-from typing import List
+from typing import List, Optional
 import uuid
 import os
 import shutil
 import time
+from pydantic import BaseModel
+
+class ReviewResponse(BaseModel):
+    id: uuid.UUID
+    full_name: str
+    rating: int
+    content: str
+    created_at: str
+    is_approved: Optional[bool] = None
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -35,16 +46,42 @@ def get_admin_stats(
     current_user: User = Depends(require_admin)
 ):
     """Platform-wide statistics for the admin dashboard."""
+    from datetime import datetime, timedelta
+    
+    # Basic Counts
     student_count = db.exec(select(func.count(User.id)).where(User.role == "student")).one()
     subject_count = db.exec(select(func.count(Subject.id))).one()
     paper_count = db.exec(select(func.count(Paper.id))).one()
     video_count = db.exec(select(func.count(Video.id))).one()
+
+    # Calculate Signups in last 7 days
+    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+    new_signups_week = db.exec(
+        select(func.count(User.id))
+        .where(User.role == "student")
+        .where(User.created_at >= seven_days_ago)
+    ).one()
+
+    # Calculate Student growth (simulated trend since we might not have many months of data)
+    # If we have 0 students, growth is 0. If we have signups this week, growth is positive.
+    growth = 0
+    if student_count > 0:
+        growth = int((new_signups_week / student_count) * 100) if student_count > new_signups_week else 100
+
+    # Resource coverage / Efficiency
+    # Percentage of papers that have at least one video solution
+    papers_with_video = db.exec(select(func.count(func.distinct(Video.paper_id)))).one()
+    efficiency = int((papers_with_video / paper_count) * 100) if paper_count > 0 else 0
 
     return {
         "total_students": student_count,
         "total_subjects": subject_count,
         "total_papers": paper_count,
         "total_videos": video_count,
+        "new_signups_week": new_signups_week,
+        "student_trend": f"+{growth}% this month" if growth > 0 else "Stable",
+        "efficiency": efficiency,
+        "resource_trend": f"+{video_count} solutions" if video_count > 0 else "Up to date"
     }
 
 
@@ -333,6 +370,21 @@ def create_paper(
     db.add(paper)
     db.commit()
     db.refresh(paper)
+
+    # Notify all students about the new paper
+    students = db.exec(select(User).where(User.role == "student")).all()
+    subject = db.get(Subject, paper.subject_id)
+    subject_name = subject.name if subject else "a new subject"
+    
+    for student in students:
+        db.add(Notification(
+            user_id=student.id,
+            message=f"New Resource! {paper.year} {subject_name} ({paper.paper_type}) is now available.",
+            type="info",
+            link=f"/papers/{paper.id}"
+        ))
+    db.commit()
+
     return {"id": str(paper.id), "year": paper.year, "paper_type": paper.paper_type}
 
 
@@ -438,31 +490,94 @@ def delete_pdf(
     return {"message": "PDF deleted"}
 
 
+from services.storage import storage_service
+
 # ── File Uploads ─────────────────────────────────────────────
 @router.post("/upload")
 async def upload_file(
-    request: Request,
     file: UploadFile = File(...),
     current_user: User = Depends(require_admin)
 ):
-    """Upload a file to local storage and return the public URL."""
+    """Upload a file via storage service (R2 or Local)."""
     try:
-        # Create unique filename to prevent collisions
-        timestamp = int(time.time())
-        filename = f"{timestamp}_{file.filename.replace(' ', '_')}"
-        file_path = os.path.join("uploads", filename)
-        
-        # Save file
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-            
-        # Dynamically build the URL based on the request's host/port
-        base_url = str(request.base_url).rstrip("/")
-        public_url = f"{base_url}/uploads/{filename}"
-        
-        return {"url": public_url, "filename": filename}
+        public_url = await storage_service.upload_file(file.file, file.filename)
+        return {"url": public_url, "filename": file.filename}
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Upload failed: {str(e)}"
         )
+
+# ── Testimonials Management ─────────────────────────────────
+@router.get("/reviews/all", response_model=List[ReviewResponse])
+def get_all_reviews_for_admin(
+    approved: Optional[str] = None,
+    db: Session = Depends(get_session),
+    current_user: User = Depends(require_admin)
+):
+    """Admin: Get reviews, optionally filtered by approval status."""
+    # Use outer join in case a user was deleted but their review remains
+    statement = select(Review, User).join(User, Review.user_id == User.id, isouter=True).order_by(Review.created_at.desc())
+    
+    if approved is not None:
+        # Robust boolean conversion for query params
+        is_approved_bool = approved.lower() == 'true'
+        statement = statement.where(Review.is_approved == is_approved_bool)
+        
+    results = db.exec(statement).all()
+    
+    return [
+        ReviewResponse(
+            id=r.id,
+            full_name=u.full_name if u else "Unknown Student",
+            rating=r.rating,
+            content=r.content,
+            created_at=r.created_at.strftime("%b %d, %Y"),
+            is_approved=r.is_approved
+        )
+        for r, u in results
+    ]
+
+@router.put("/reviews/{review_id}/approve")
+def approve_review(
+    review_id: uuid.UUID,
+    db: Session = Depends(get_session),
+    current_user: User = Depends(require_admin)
+):
+    """Admin: Approve a review."""
+    review = db.get(Review, review_id)
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    review.is_approved = True
+    db.add(review)
+    db.commit()
+    return {"message": "Review approved"}
+
+@router.put("/reviews/{review_id}/unapprove")
+def unapprove_review(
+    review_id: uuid.UUID,
+    db: Session = Depends(get_session),
+    current_user: User = Depends(require_admin)
+):
+    """Admin: Take a live review back to pending."""
+    review = db.get(Review, review_id)
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    review.is_approved = False
+    db.add(review)
+    db.commit()
+    return {"message": "Review moved back to pending"}
+
+@router.delete("/reviews/{review_id}")
+def delete_review(
+    review_id: uuid.UUID,
+    db: Session = Depends(get_session),
+    current_user: User = Depends(require_admin)
+):
+    """Admin: Delete/Reject a review."""
+    review = db.get(Review, review_id)
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    db.delete(review)
+    db.commit()
+    return {"message": "Review deleted"}

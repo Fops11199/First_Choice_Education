@@ -1,50 +1,122 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-
-interface User {
-  id: string;
-  email: string;
-  full_name: string;
-  role: 'student' | 'tutor' | 'admin';
-  level?: string;
-  whatsapp_number?: string;
-}
+import { toast } from 'sonner';
+import api from '../api/api';
 
 interface AuthContextType {
-  user: User | null;
+  user: any;
   loading: boolean;
-  login: (token: string, user: User) => void;
+  error: string | null;
+  login: (email: string, password: string) => Promise<boolean>;
+  register: (full_name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
+  updateUser: (data: any) => void;
+  clearError: () => void;
+  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
     const token = localStorage.getItem('token');
-    if (savedUser && token) {
-      setUser(JSON.parse(savedUser));
+    if (token) {
+      fetchUser();
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
-  const login = (token: string, userData: User) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
-    setUser(userData);
+  const fetchUser = async () => {
+    try {
+      const response = await api.get('/users/me');
+      setUser(response.data);
+      setIsAuthenticated(true);
+    } catch (err) {
+      localStorage.removeItem('token');
+      setIsAuthenticated(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatError = (err: any) => {
+    const detail = err.response?.data?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) {
+      return detail[0]?.msg || "Invalid input provided";
+    }
+    return "An unexpected error occurred.";
+  };
+
+  const clearError = () => setError(null);
+
+  const login = async (email: string, password: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const formData = new URLSearchParams();
+      formData.append('username', email.trim().toLowerCase());
+      formData.append('password', password);
+
+      const response = await api.post('/auth/login', formData, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
+      
+      const { access_token, user: userData } = response.data;
+      localStorage.setItem('token', access_token);
+      setUser(userData);
+      setIsAuthenticated(true);
+      return true;
+    } catch (err: any) {
+      const message = formatError(err);
+      setError(message);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const register = async (full_name: string, email: string, password: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.post('/auth/register', {
+        full_name,
+        email: email.trim().toLowerCase(),
+        password
+      });
+      const { access_token, user: newUserData } = response.data;
+      localStorage.setItem('token', access_token);
+      setUser(newUserData);
+      setIsAuthenticated(true);
+      return true;
+    } catch (err: any) {
+      const message = formatError(err);
+      setError(message);
+      return false;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const logout = () => {
     localStorage.removeItem('token');
-    localStorage.removeItem('user');
     setUser(null);
+    setIsAuthenticated(false);
+    toast.info("Logged Out", { description: "You have been safely signed out." });
   };
 
+  const updateUser = (data: any) => setUser(data);
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ 
+      user, loading, error, login, register, logout, updateUser, clearError, isAuthenticated 
+    }}>
       {children}
     </AuthContext.Provider>
   );

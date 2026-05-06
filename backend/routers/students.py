@@ -4,7 +4,8 @@ Students Router — /api/v1/students/me/*
 All endpoints infer the current user from the JWT token.
 No user_id needed in the URL — eliminates spoofing risk.
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
+from pydantic import BaseModel
 from sqlmodel import Session, select
 from db.database import get_session
 from models.progress import (
@@ -13,8 +14,11 @@ from models.progress import (
 from models.content import Subject, Paper, Video
 from models.user import User
 from core.security import require_user
-import uuid
 from datetime import datetime
+import uuid
+
+class EnrollmentCreate(BaseModel):
+    subject_id: uuid.UUID
 
 router = APIRouter(prefix="/students/me", tags=["Students"])
 
@@ -82,15 +86,17 @@ def get_my_enrollments(
     ]
 
 
+
+
 @router.post("/enrollments", status_code=status.HTTP_201_CREATED)
 def enroll_in_subject(
-    subject_id: uuid.UUID,
+    data: EnrollmentCreate = Body(...),
     db: Session = Depends(get_session),
     current_user: User = Depends(require_user)
 ):
     """Enroll the current user in a subject."""
     # Verify subject exists
-    subject = db.get(Subject, subject_id)
+    subject = db.get(Subject, data.subject_id)
     if not subject:
         raise HTTPException(status_code=404, detail="Subject not found")
     
@@ -98,17 +104,18 @@ def enroll_in_subject(
     existing = db.exec(
         select(Enrollment).where(
             Enrollment.user_id == current_user.id,
-            Enrollment.subject_id == subject_id
+            Enrollment.subject_id == data.subject_id
         )
     ).first()
+
     if existing:
         if not existing.is_active:
             existing.is_active = True
             db.commit()
-            return {"message": "Re-enrolled successfully"}
-        return {"message": "Already enrolled"}
+            return {"message": "Re-enrolled successfully", "enrollment_id": str(existing.id)}
+        return {"message": "Already enrolled", "enrollment_id": str(existing.id)}
 
-    enrollment = Enrollment(user_id=current_user.id, subject_id=subject_id)
+    enrollment = Enrollment(user_id=current_user.id, subject_id=data.subject_id)
     db.add(enrollment)
     db.commit()
     db.refresh(enrollment)

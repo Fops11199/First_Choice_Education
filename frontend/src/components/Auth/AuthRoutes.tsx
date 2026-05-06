@@ -6,25 +6,37 @@ import { useAuth } from '../../context/AuthContext';
  * ProtectedRoute: Only accessible by logged-in users.
  * Redirects to /login if not authenticated.
  */
-export const ProtectedRoute = ({ children, roles }: { children: React.ReactNode, roles?: string[] }) => {
+export const ProtectedRoute = ({ 
+  children, 
+  roles, 
+  adminOnly = false 
+}: { 
+  children: React.ReactNode, 
+  roles?: string[],
+  adminOnly?: boolean
+}) => {
   const { user, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (!user && !loading) {
-    console.log("Not logged in, redirecting from ProtectedRoute...");
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Handle adminOnly shortcut
+  if (adminOnly && user && user.role !== 'admin') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Handle specific roles array
   if (roles && user && !roles.includes(user.role)) {
-    // If user doesn't have the required role, redirect to their default dashboard
     const redirectPath = user.role === 'admin' ? '/admin_dashboard' : '/dashboard';
     return <Navigate to={redirectPath} replace />;
   }
@@ -41,17 +53,18 @@ export const GuestRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (user) {
-    // Redirect to appropriate dashboard based on role
     const redirectPath = user.role === 'admin' ? '/admin_dashboard' : '/dashboard';
     return <Navigate to={redirectPath} replace />;
   }
 
   return <>{children}</>;
 };
+
+export default ProtectedRoute;

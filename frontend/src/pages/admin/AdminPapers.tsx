@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Plus, FileText, Trash2, Loader2, ExternalLink, X, Play, Upload } from 'lucide-react';
+import { ChevronLeft, Plus, FileText, Trash2, Loader2, ExternalLink, X, Play, Upload, ArrowUpRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import api from '../../api/api';
 
 const AdminPapers = () => {
@@ -45,7 +46,7 @@ const AdminPapers = () => {
       setSubject(currentSubject);
       setPapers(papersRes.data);
     } catch (err) {
-      console.error("Failed to fetch papers:", err);
+      toast.error("Fetch Failed", { description: "Could not retrieve papers." });
     } finally {
       setLoading(false);
     }
@@ -56,11 +57,11 @@ const AdminPapers = () => {
     setIsSubmitting(true);
     try {
       await api.post('/admin/papers', newPaper);
+      toast.success("Paper Added Successfully");
       setIsPaperModalOpen(false);
       fetchData();
-    } catch (err) {
-      console.error("Failed to add paper:", err);
-      alert("Error adding paper.");
+    } catch (err: any) {
+      toast.error("Operation Failed", { description: err.response?.data?.detail || "Error adding paper." });
     } finally {
       setIsSubmitting(false);
     }
@@ -115,10 +116,9 @@ const AdminPapers = () => {
       await Promise.all(promises);
       fetchData();
       setIsContentModalOpen(false);
-      alert("All materials updated successfully!");
+      toast.success("Materials Updated", { description: "All content has been saved successfully." });
     } catch (err) {
-      console.error(err);
-      alert("Error updating some materials. Please check your links.");
+      toast.error("Update Failed", { description: "Error updating some materials. Check links." });
     } finally {
       setIsSubmitting(false);
     }
@@ -142,126 +142,164 @@ const AdminPapers = () => {
       } else {
         setContentForm(prev => ({ ...prev, answer_url: fileUrl }));
       }
+      toast.success("File Uploaded");
     } catch (err) {
-      console.error("Upload failed:", err);
-      alert("Failed to upload file. Please try again.");
+      toast.error("Upload Failed", { description: "Failed to upload file." });
     } finally {
       if (type === 'question') setIsUploadingQuestion(false);
       else setIsUploadingAnswer(false);
     }
   };
 
-  const handleDeletePaper = async (id: string) => {
-    if (!window.confirm("Delete this paper and all its associated videos/PDFs?")) return;
+  const handleDeletePaper = async (id: string, year: number) => {
+    if (!window.confirm(`Delete ${year} paper and all its associated videos/PDFs?`)) return;
     try {
       await api.delete(`/admin/papers/${id}`);
+      toast.success("Paper Removed");
       fetchData();
     } catch (err) {
-      console.error(err);
+      toast.error("Delete Failed");
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+      <div className="min-h-[60vh] flex flex-col items-center justify-center">
+        <div className="w-12 h-12 border-4 border-primary/10 border-t-primary rounded-full animate-spin"></div>
+        <p className="mt-6 text-slate-400 font-semibold text-sm uppercase tracking-widest">Loading Papers...</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-20">
+    <div className="max-w-7xl mx-auto space-y-10 pb-20">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <button 
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 px-4">
+        <div className="flex items-center gap-6">
+          <motion.button 
+            whileHover={{ scale: 1.1, x: -5 }}
+            whileTap={{ scale: 0.9 }}
             onClick={() => navigate('/admin_dashboard/subjects')}
-            className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-400"
+            className="p-3 bg-white border border-blue-50 rounded-2xl shadow-sm text-slate-400 hover:text-primary hover:border-primary/20 transition-all"
           >
             <ChevronLeft className="w-6 h-6" />
-          </button>
+          </motion.button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">{subject?.name}</h1>
-            <p className="text-sm text-slate-500">{subject?.level_name} • Management</p>
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-3xl font-bold text-slate-800 tracking-tight">{subject?.name}</h1>
+              <span className="px-3 py-1 bg-blue-50 text-primary text-[10px] font-bold uppercase tracking-widest rounded-full border border-blue-100">
+                {subject?.level_name}
+              </span>
+            </div>
+            <p className="text-sm font-medium text-slate-400">Manage exam papers and learning materials.</p>
           </div>
         </div>
-        <button 
+        <motion.button 
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           onClick={() => setIsPaperModalOpen(true)}
-          className="btn-primary flex items-center gap-2 py-2.5 px-5 text-sm rounded-xl"
+          className="w-full md:w-auto bg-primary hover:bg-blue-500 text-white flex items-center justify-center gap-2 py-4 px-8 rounded-2xl font-semibold text-sm shadow-xl shadow-primary/10 transition-all"
         >
-          <Plus className="w-4 h-4" /> Add Paper
-        </button>
+          <Plus className="w-5 h-5" /> Add New Paper
+        </motion.button>
       </div>
 
       {/* Papers Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4">
         {papers.length > 0 ? (
           papers.map((paper) => (
             <motion.div 
               key={paper.id}
-              whileHover={{ y: -4 }}
-              className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all group"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{ y: -6 }}
+              className="bg-white border border-blue-50 rounded-[2.5rem] p-6 shadow-sm hover:shadow-xl hover:shadow-blue-100/30 transition-all duration-300 group relative overflow-hidden flex flex-col"
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
-                  <FileText className="w-6 h-6" />
+              {/* Background Decoration */}
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors"></div>
+              
+              <div className="relative z-10 flex-1 flex flex-col">
+                <div className="flex items-start justify-between mb-6">
+                  <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-primary group-hover:scale-110 transition-transform shadow-sm">
+                    <FileText className="w-7 h-7" />
+                  </div>
+                  <button 
+                    onClick={() => handleDeletePaper(paper.id, paper.year)}
+                    className="p-3 text-slate-300 hover:text-red-400 hover:bg-red-50 rounded-xl transition-all"
+                    title="Delete Paper"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
                 </div>
-                <button 
-                  onClick={() => handleDeletePaper(paper.id)}
-                  className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
 
-              <h3 className="text-lg font-bold text-slate-900 mb-1">{paper.year} {paper.paper_type}</h3>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">{subject?.name}</p>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs font-bold">
-                  <span className="text-slate-400">VIDEO SOLUTIONS</span>
-                  <span className={paper.video_count > 0 ? "text-green-500" : "text-slate-300"}>
-                    {paper.video_count} Added
-                  </span>
+                <div className="mb-6">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-1">{subject?.name}</p>
+                  <h3 className="text-2xl font-bold text-slate-800 leading-tight">{paper.year} <span className="text-primary">{paper.paper_type}</span></h3>
                 </div>
-                <div className="flex items-center justify-between text-xs font-bold">
-                  <span className="text-slate-400">PDF MATERIALS</span>
-                  <span className={paper.pdf_count >= 2 ? "text-green-500" : "text-amber-500"}>
-                    {paper.pdf_count}/2 Ready
-                  </span>
-                </div>
-              </div>
 
-              <div className="mt-6 pt-6 border-t border-slate-50 flex gap-2">
-                <button 
-                  onClick={() => handleOpenContent(paper)}
-                  className="flex-1 py-2 text-[11px] font-bold bg-slate-50 text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
-                >
-                  Edit Content
-                </button>
-                <Link 
-                  to={`/paper/${paper.id}`}
-                  target="_blank"
-                  className="px-3 py-2 bg-primary/5 text-primary rounded-lg hover:bg-primary/10 transition-colors"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </Link>
+                <div className="space-y-4 mb-6 flex-1">
+                  <div className="p-4 bg-blue-50/30 rounded-2xl border border-blue-50">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <Play className="w-3 h-3 text-primary" /> Video Solutions
+                      </span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${paper.video_count > 0 ? "bg-primary/10 text-primary" : "bg-slate-100 text-slate-400"}`}>
+                        {paper.video_count > 0 ? "ACTIVE" : "EMPTY"}
+                      </span>
+                    </div>
+                    <div className="h-1.5 bg-blue-50/50 rounded-full overflow-hidden">
+                      <div className={`h-full bg-primary transition-all duration-1000 ${paper.video_count > 0 ? "w-full" : "w-0"}`}></div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-blue-50/30 rounded-2xl border border-blue-50">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <Upload className="w-3 h-3 text-blue-500" /> PDF Materials
+                      </span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${paper.pdf_count >= 2 ? "bg-green-50 text-green-600" : "bg-amber-50 text-amber-600"}`}>
+                        {paper.pdf_count}/2 READY
+                      </span>
+                    </div>
+                    <div className="h-1.5 bg-blue-50/50 rounded-full overflow-hidden">
+                      <div className={`h-full bg-blue-500 transition-all duration-1000`} style={{ width: `${Math.min((paper.pdf_count / 2) * 100, 100)}%` }}></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-4 border-t border-blue-50/50">
+                  <button 
+                    onClick={() => handleOpenContent(paper)}
+                    className="flex-1 py-3 text-xs font-semibold bg-primary text-white rounded-xl hover:bg-blue-500 transition-all active:scale-95 shadow-lg shadow-primary/20"
+                  >
+                    Manage
+                  </button>
+                  <Link 
+                    to={`/papers/${paper.id}`}
+                    target="_blank"
+                    className="p-3 bg-white text-slate-400 rounded-xl hover:bg-blue-50 hover:text-primary border border-blue-50 hover:border-primary/20 transition-all active:scale-95"
+                  >
+                    <ExternalLink className="w-5 h-5" />
+                  </Link>
+                </div>
               </div>
             </motion.div>
           ))
         ) : (
-          <div className="col-span-full py-20 text-center bg-white border border-slate-200 border-dashed rounded-3xl">
-            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FileText className="w-8 h-8 text-slate-300" />
+          <div className="col-span-full py-32 text-center bg-white border border-blue-50 border-dashed rounded-[3rem] shadow-sm">
+            <div className="w-24 h-24 bg-blue-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 text-blue-200">
+              <FileText className="w-12 h-12" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900 mb-1">No papers yet</h3>
-            <p className="text-slate-500 text-sm mb-6">Start by adding the first examination year for this subject.</p>
-            <button 
+            <h3 className="text-xl font-bold text-slate-800 mb-2">No papers published yet</h3>
+            <p className="text-slate-400 font-medium mb-10 max-w-sm mx-auto">Build your examination library by adding the first year for this subject.</p>
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setIsPaperModalOpen(true)}
-              className="btn-primary py-2 px-6 text-sm inline-flex items-center gap-2"
+              className="bg-primary hover:bg-blue-500 text-white py-4 px-10 rounded-2xl font-semibold text-sm shadow-xl shadow-primary/20 transition-all inline-flex items-center gap-3"
             >
-              <Plus className="w-4 h-4" /> Add First Paper
-            </button>
+              <Plus className="w-5 h-5" /> Add First Paper
+            </motion.button>
           </div>
         )}
       </div>
@@ -269,66 +307,53 @@ const AdminPapers = () => {
       {/* Add Paper Modal */}
       <AnimatePresence>
         {isPaperModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-              onClick={() => setIsPaperModalOpen(false)}
-            ></motion.div>
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl"
-            >
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">Add New Paper</h2>
-              <p className="text-sm text-slate-500 mb-8">Select the year and type for this subject.</p>
-
-              <form onSubmit={handleAddPaper} className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Year</label>
-                  <input 
-                    type="number" 
-                    required
-                    value={newPaper.year}
-                    onChange={(e) => setNewPaper({ ...newPaper, year: parseInt(e.target.value) })}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary transition-all font-semibold"
-                  />
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsPaperModalOpen(false)} />
+            <motion.div initial={{ scale: 0.9, opacity: 0, y: 40 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 40 }} className="relative bg-white rounded-[3rem] p-10 w-full max-w-md shadow-2xl border border-blue-50 overflow-hidden">
+              <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl"></div>
+              
+              <div className="relative z-10">
+                <div className="w-16 h-16 bg-blue-50 text-primary rounded-[1.5rem] flex items-center justify-center mb-8 shadow-inner">
+                  <Plus className="w-8 h-8" />
                 </div>
+                
+                <h2 className="text-3xl font-bold text-slate-800 mb-2 tracking-tight">New Paper</h2>
+                <p className="text-slate-500 font-medium text-sm mb-10 leading-relaxed">Configure the examination details for this entry.</p>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Paper Type</label>
-                  <select 
-                    required
-                    value={newPaper.paper_type}
-                    onChange={(e) => setNewPaper({ ...newPaper, paper_type: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary transition-all font-semibold appearance-none"
-                  >
-                    <option value="Paper 1">Paper 1 (MCQs)</option>
-                    <option value="Paper 2">Paper 2 (Structured)</option>
-                    <option value="Paper 3">Paper 3 (Practicals)</option>
-                  </select>
-                </div>
+                <form onSubmit={handleAddPaper} className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-1">Examination Year</label>
+                    <input 
+                      type="number" required value={newPaper.year} onChange={(e) => setNewPaper({ ...newPaper, year: parseInt(e.target.value) })}
+                      className="w-full px-6 py-4 bg-blue-50/20 border border-blue-100 rounded-2xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all font-semibold text-slate-700"
+                    />
+                  </div>
 
-                <div className="flex items-center gap-3 pt-4">
-                  <button 
-                    type="button"
-                    onClick={() => setIsPaperModalOpen(false)}
-                    className="flex-1 py-3 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-all"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="flex-1 py-3 text-sm font-bold bg-primary text-white rounded-xl shadow-lg shadow-primary/20 hover:bg-primary-light transition-all flex items-center justify-center gap-2"
-                  >
-                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Paper"}
-                  </button>
-                </div>
-              </form>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-1">Paper Category</label>
+                    <div className="relative">
+                      <select 
+                        required value={newPaper.paper_type} onChange={(e) => setNewPaper({ ...newPaper, paper_type: e.target.value })}
+                        className="w-full px-6 py-4 bg-blue-50/20 border border-blue-100 rounded-2xl focus:outline-none focus:border-primary appearance-none cursor-pointer font-semibold text-slate-700"
+                      >
+                        <option value="Paper 1">Paper 1 (MCQs)</option>
+                        <option value="Paper 2">Paper 2 (Structured)</option>
+                        <option value="Paper 3">Paper 3 (Practicals)</option>
+                      </select>
+                      <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-blue-300">
+                        <ChevronLeft className="w-5 h-5 -rotate-90" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 pt-6">
+                    <button type="button" onClick={() => setIsPaperModalOpen(false)} className="flex-1 py-4 text-sm font-semibold text-slate-400 hover:text-slate-600 transition-all">Cancel</button>
+                    <button type="submit" disabled={isSubmitting} className="flex-[2] py-4 bg-primary text-white rounded-2xl font-semibold shadow-xl shadow-primary/20 hover:bg-blue-500 transition-all flex items-center justify-center gap-2">
+                      {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Create Entry"}
+                    </button>
+                  </div>
+                </form>
+              </div>
             </motion.div>
           </div>
         )}
@@ -337,102 +362,90 @@ const AdminPapers = () => {
       {/* Edit Content Modal (Video/PDFs) */}
       <AnimatePresence>
         {isContentModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-              onClick={() => setIsContentModalOpen(false)}
-            ></motion.div>
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white rounded-3xl p-8 w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-auto"
-            >
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h2 className="text-2xl font-bold text-slate-900">Manage Materials</h2>
-                  <p className="text-sm text-slate-500">{selectedPaper?.year} {selectedPaper?.paper_type}</p>
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsContentModalOpen(false)} />
+            <motion.div initial={{ scale: 0.9, opacity: 0, y: 40 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 40 }} className="relative bg-white rounded-[3rem] p-8 md:p-10 w-full max-w-3xl shadow-2xl border border-blue-50 max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-blue-100">
+              <div className="flex items-start justify-between mb-10">
+                <div className="flex items-center gap-5">
+                  <div className="w-14 h-14 bg-blue-50 rounded-[1.2rem] flex items-center justify-center text-primary shadow-inner">
+                    <Upload className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Material Command</h2>
+                    <p className="text-sm font-medium text-slate-500">{selectedPaper?.year} • {selectedPaper?.paper_type} • {subject?.name}</p>
+                  </div>
                 </div>
-                <button onClick={() => setIsContentModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                  <X className="w-6 h-6 text-slate-400" />
+                <button onClick={() => setIsContentModalOpen(false)} className="p-3 hover:bg-slate-50 rounded-xl transition-all text-slate-400 hover:text-slate-800">
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
               <form onSubmit={handleSaveMaterials} className="space-y-8">
-                {/* YouTube Link */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Play className="w-5 h-5 text-red-600" />
-                    <h3 className="font-bold text-slate-800">YouTube Solution</h3>
+                {/* YouTube Link Section */}
+                <div className="p-6 bg-blue-50/20 rounded-[2rem] border border-blue-50 space-y-6 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-6 text-primary/5 group-hover:text-primary/10 transition-colors">
+                    <Play className="w-20 h-20 rotate-12" />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Video ID or Link</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. dQw4w9WgXcQ"
-                      value={contentForm.youtube_id}
-                      onChange={(e) => setContentForm({ ...contentForm, youtube_id: e.target.value })}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary transition-all font-semibold"
-                    />
+                  
+                  <div className="flex items-center gap-3 relative z-10">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                      <Play className="w-4 h-4 fill-current" />
+                    </div>
+                    <h3 className="text-base font-bold text-slate-800">Masterclass Video Solution</h3>
+                  </div>
+
+                  <div className="space-y-2 relative z-10">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-1">YouTube Video ID or Link</label>
+                    <div className="relative">
+                      <input 
+                        type="text" placeholder="e.g. dQw4w9WgXcQ" value={contentForm.youtube_id} onChange={(e) => setContentForm({ ...contentForm, youtube_id: e.target.value })}
+                        className="w-full px-6 py-4 bg-white border border-blue-100 rounded-2xl text-sm font-semibold text-slate-700 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all shadow-sm"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div className="w-full h-px bg-slate-100"></div>
+                {/* PDF Materials Section */}
+                <div className="p-6 bg-blue-50/20 rounded-[2rem] border border-blue-50 space-y-6 relative overflow-hidden group">
+                   <div className="absolute top-0 right-0 p-6 text-blue-500/5 group-hover:text-blue-500/10 transition-colors">
+                    <FileText className="w-20 h-20 -rotate-12" />
+                  </div>
 
-                {/* PDF Materials */}
-                <div className="space-y-6">
-                  <div className="flex items-center gap-2">
-                    <Upload className="w-5 h-5 text-blue-600" />
-                    <h3 className="font-bold text-slate-800">PDF Materials</h3>
+                  <div className="flex items-center gap-3 relative z-10">
+                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
+                      <Upload className="w-4 h-4" />
+                    </div>
+                    <h3 className="text-base font-bold text-slate-800">Digital Documents</h3>
                   </div>
                   
-                  <div className="grid gap-6">
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Question Paper URL</label>
-                        <label className="flex items-center gap-1.5 text-[10px] font-bold text-primary cursor-pointer hover:underline">
-                          <Upload className="w-3 h-3" />
-                          {isUploadingQuestion ? "Uploading..." : "Upload File"}
-                          <input 
-                            type="file" 
-                            accept="application/pdf" 
-                            className="hidden" 
-                            onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], 'question')}
-                          />
+                  <div className="grid gap-6 relative z-10">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between px-1">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Question Paper (PDF)</label>
+                        <label className="flex items-center gap-2 text-[10px] font-bold text-primary hover:text-primary-dark cursor-pointer transition-colors bg-white px-3 py-1.5 rounded-lg border border-blue-100 shadow-sm">
+                          {isUploadingQuestion ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                          {isUploadingQuestion ? "UPLOADING..." : "UPLOAD NEW"}
+                          <input type="file" accept="application/pdf" className="hidden" onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], 'question')} />
                         </label>
                       </div>
                       <input 
-                        type="text" 
-                        placeholder="Link to question PDF"
-                        value={contentForm.question_url}
-                        onChange={(e) => setContentForm({ ...contentForm, question_url: e.target.value })}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary transition-all font-semibold"
+                        type="text" placeholder="Public URL to question file" value={contentForm.question_url} onChange={(e) => setContentForm({ ...contentForm, question_url: e.target.value })}
+                        className="w-full px-6 py-4 bg-white border border-blue-100 rounded-2xl text-sm font-semibold text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all shadow-sm"
                       />
                     </div>
                     
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Answer / Marking Scheme URL</label>
-                        <label className="flex items-center gap-1.5 text-[10px] font-bold text-primary cursor-pointer hover:underline">
-                          <Upload className="w-3 h-3" />
-                          {isUploadingAnswer ? "Uploading..." : "Upload File"}
-                          <input 
-                            type="file" 
-                            accept="application/pdf" 
-                            className="hidden" 
-                            onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], 'answer')}
-                          />
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between px-1">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Marking Scheme (PDF)</label>
+                        <label className="flex items-center gap-2 text-[10px] font-bold text-primary hover:text-primary-dark cursor-pointer transition-colors bg-white px-3 py-1.5 rounded-lg border border-blue-100 shadow-sm">
+                          {isUploadingAnswer ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                          {isUploadingAnswer ? "UPLOADING..." : "UPLOAD NEW"}
+                          <input type="file" accept="application/pdf" className="hidden" onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], 'answer')} />
                         </label>
                       </div>
                       <input 
-                        type="text" 
-                        placeholder="Link to answer PDF"
-                        value={contentForm.answer_url}
-                        onChange={(e) => setContentForm({ ...contentForm, answer_url: e.target.value })}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary transition-all font-semibold"
+                        type="text" placeholder="Public URL to solution file" value={contentForm.answer_url} onChange={(e) => setContentForm({ ...contentForm, answer_url: e.target.value })}
+                        className="w-full px-6 py-4 bg-white border border-blue-100 rounded-2xl text-sm font-semibold text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all shadow-sm"
                       />
                     </div>
                   </div>
@@ -440,20 +453,13 @@ const AdminPapers = () => {
 
                 <div className="pt-4">
                   <button 
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full py-4 bg-slate-900 text-white rounded-2xl text-sm font-bold shadow-xl shadow-slate-200 hover:bg-slate-800 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                    type="submit" disabled={isSubmitting}
+                    className="w-full py-5 bg-primary text-white rounded-2xl text-sm font-bold shadow-xl shadow-primary/20 hover:bg-blue-500 transition-all flex items-center justify-center gap-3 disabled:opacity-50 active:scale-95"
                   >
-                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save All Materials"}
+                    {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Deploy All Materials <ArrowUpRight className="w-4 h-4" /></>}
                   </button>
                 </div>
               </form>
-
-              <div className="mt-12 pt-8 border-t border-slate-100">
-                <p className="text-xs font-medium text-slate-400 text-center">
-                  Changes take effect immediately on the student-facing site.
-                </p>
-              </div>
             </motion.div>
           </div>
         )}

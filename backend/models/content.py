@@ -6,14 +6,14 @@ import uuid
 class Level(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = Field(unique=True) # O-Level, A-Level
-    subjects: List["Subject"] = Relationship(back_populates="level")
+    subjects: List["Subject"] = Relationship(back_populates="level", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 class Subject(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str
     level_id: uuid.UUID = Field(foreign_key="level.id", index=True)
     level: Level = Relationship(back_populates="subjects")
-    papers: List["Paper"] = Relationship(back_populates="subject")
+    papers: List["Paper"] = Relationship(back_populates="subject", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 class Paper(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -21,8 +21,8 @@ class Paper(SQLModel, table=True):
     year: int
     paper_type: str # Paper 1, Paper 2, Paper 3
     subject: Subject = Relationship(back_populates="papers")
-    videos: List["Video"] = Relationship(back_populates="paper")
-    pdfs: List["PDF"] = Relationship(back_populates="paper")
+    videos: List["Video"] = Relationship(back_populates="paper", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    pdfs: List["PDF"] = Relationship(back_populates="paper", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 class Video(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)

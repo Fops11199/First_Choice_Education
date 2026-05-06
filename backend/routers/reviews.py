@@ -4,7 +4,7 @@ from db.database import get_session
 from models.review import Review
 from models.user import User
 from core.security import require_user, require_admin
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 import uuid
 
@@ -20,6 +20,7 @@ class ReviewResponse(BaseModel):
     rating: int
     content: str
     created_at: str
+    is_approved: Optional[bool] = None
 
 @router.get("/", response_model=List[ReviewResponse])
 def get_approved_reviews(db: Session = Depends(get_session)):
@@ -55,13 +56,31 @@ def post_review(
     db.refresh(new_review)
     return {"message": "Review submitted for approval"}
 
-@router.get("/admin/pending", response_model=List[Review])
-def get_pending_reviews(
+@router.get("/admin/all", response_model=List[ReviewResponse])
+def get_all_reviews_for_admin(
+    approved: Optional[bool] = None,
     db: Session = Depends(get_session),
     current_user: User = Depends(require_admin)
 ):
-    """Admin: Get all reviews awaiting approval."""
-    return db.exec(select(Review).where(Review.is_approved == False)).all()
+    """Admin: Get reviews, optionally filtered by approval status."""
+    statement = select(Review, User).join(User, Review.user_id == User.id).order_by(Review.created_at.desc())
+    
+    if approved is not None:
+        statement = statement.where(Review.is_approved == approved)
+        
+    results = db.exec(statement).all()
+    
+    return [
+        ReviewResponse(
+            id=r.id,
+            full_name=u.full_name,
+            rating=r.rating,
+            content=r.content,
+            created_at=r.created_at.strftime("%b %d, %Y"),
+            is_approved=r.is_approved
+        )
+        for r, u in results
+    ]
 
 @router.put("/admin/{review_id}/approve")
 def approve_review(
@@ -77,6 +96,21 @@ def approve_review(
     db.add(review)
     db.commit()
     return {"message": "Review approved"}
+
+@router.put("/admin/{review_id}/unapprove")
+def unapprove_review(
+    review_id: uuid.UUID,
+    db: Session = Depends(get_session),
+    current_user: User = Depends(require_admin)
+):
+    """Admin: Take a live review back to pending."""
+    review = db.get(Review, review_id)
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    review.is_approved = False
+    db.add(review)
+    db.commit()
+    return {"message": "Review moved back to pending"}
 
 @router.delete("/admin/{review_id}")
 def delete_review(

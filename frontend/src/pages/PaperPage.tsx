@@ -1,474 +1,370 @@
-import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
-import { Document, Page, pdfjs } from "react-pdf";
-import { ChevronRight, PlayCircle, MessageCircle, FileText, CheckCircle, ZoomIn, ZoomOut, Download, Pin, Shield, GraduationCap, X } from "lucide-react";
-import { Button } from "../components/ui/Button";
-import { Badge } from "../components/ui/Badge";
-import { Card, CardContent } from "../components/ui/Card";
-
-// Set worker for react-pdf
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
-
-import api from "../api/api";
-import { Loader2 } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
-
-const TabButton = ({ active, onClick, icon, label }: any) => (
-  <button
-    onClick={onClick}
-    className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-colors ${
-      active ? "bg-primary text-white shadow-sm" : "text-slate-500 hover:bg-slate-50"
-    }`}
-  >
-    {icon}
-    {label}
-  </button>
-);
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { 
+    ArrowLeft, MessageSquare, Shield, 
+    Send, Loader2, Maximize2, Minimize2, 
+    ChevronRight, ChevronLeft, GraduationCap, 
+    MoreVertical, Info, FileText, Reply as ReplyIcon, X,
+    Play, Layout, FileSearch, CheckCircle2,
+    Eye, Monitor, Smartphone, Video
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import api from '../api/api';
+import { useAuth } from '../context/AuthContext';
+import { toast } from 'sonner';
 
 const PaperPage = () => {
-  const { id } = useParams();
-  const [numPages, setNumPages] = useState<number | null>(null);
-  const [pageNumber, setPageNumber] = useState(1);
-  const [scale, setScale] = useState(1.0);
-  const [activeTab, setActiveTab] = useState<'video' | 'pdf' | 'discuss'>('pdf');
-  const [pdfType, setPdfType] = useState<'question' | 'answer'>('question');
-  
-  const { user } = useAuth();
-  const [paper, setPaper] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [comments, setComments] = useState<any[]>([]);
-  const [newComment, setNewComment] = useState("");
-  const [isPosting, setIsPosting] = useState(false);
-  const [replyTo, setReplyTo] = useState<{ id: string, name: string } | null>(null);
+    const { paperId } = useParams();
+    const navigate = useNavigate();
+    const { user: currentUser } = useAuth();
+    
+    const [paper, setPaper] = useState<any>(null);
+    const [comments, setComments] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    
+    // View state
+    const [viewMode, setViewMode] = useState<'split' | 'video' | 'pdf'>('split');
+    const [pdfType, setPdfType] = useState<'question' | 'answer'>('question');
+    const [showSidebar, setShowSidebar] = useState(false);
+    
+    // Chat state
+    const [newComment, setNewComment] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const commentsEndRef = useRef<null | HTMLDivElement>(null);
 
-  useEffect(() => {
-    const fetchPaper = async () => {
-      try {
-        const response = await api.get(`/content/papers/${id}`);
-        const data = response.data;
+    const fetchPaperAndComments = async () => {
+        try {
+            const [paperRes, commentsRes] = await Promise.all([
+                api.get(`/content/papers/${paperId}`),
+                api.get(`/community/papers/${paperId}/comments`)
+            ]);
+            setPaper(paperRes.data);
+            setComments(commentsRes.data);
+            
+            // Auto-adjust view mode based on device and availability
+            if (window.innerWidth < 1024) {
+                setViewMode('pdf');
+            } else if (!paperRes.data.videos?.length) {
+                setViewMode('pdf');
+            }
+        } catch (err) {
+            console.error('Error fetching paper data:', err);
+            toast.error("Failed to load workspace");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchPaperAndComments();
+        // Force the app to hide any global scrollbars and ensure we are on top
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = 'unset'; };
+    }, [paperId]);
+
+    const extractYoutubeId = (url: string) => {
+        if (!url) return null;
+        if (url.length === 11) return url;
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : url;
+    };
+
+    const getPdfUrl = () => {
+        if (!paper) return "";
+        const targetPdf = paper.pdfs?.find((p: any) => p.pdf_type === pdfType) || paper.pdfs?.[0];
+        const rawUrl = targetPdf?.file_url || paper.file_url;
         
-        // Find question and answer PDFs
-        const questionPdf = data.pdfs?.find((p: any) => p.pdf_type === 'question')?.file_url;
-        const answerPdf = data.pdfs?.find((p: any) => p.pdf_type === 'answer')?.file_url;
+        if (!rawUrl) return "";
         
-        // Find first video
-        const video = data.videos?.[0];
-        const videoUrl = video ? `https://www.youtube.com/embed/${video.youtube_id}` : null;
-        
-        // Parse timestamps if they exist
-        let timestamps = [];
-        if (video && video.timestamps) {
-          try {
-            timestamps = JSON.parse(video.timestamps);
-          } catch (e) {
-            console.error("Failed to parse timestamps", e);
-          }
+        let processedUrl = rawUrl;
+        if (processedUrl.includes('localhost:8080')) {
+            processedUrl = processedUrl.split('localhost:8080')[1];
         }
 
-        setPaper({
-          title: `${data.subject} ${data.year} ${data.paper_type}`,
-          level: `GCE ${data.level}`,
-          videoUrl,
-          questionPdf,
-          answerPdf,
-          timestamps
-        });
-        setLoading(false);
-      } catch (err) {
-        console.error("Error fetching paper:", err);
-        setError("Could not load paper. Please try again later.");
-        setLoading(false);
-      }
-    };
-
-    const fetchComments = async () => {
-      if (!id) return;
-      try {
-        const res = await api.get(`/community/papers/${id}/comments`);
-        setComments(res.data);
-      } catch (err) {
-        console.error("Error fetching comments:", err);
-      }
-    };
-
-    if (id) {
-      fetchPaper();
-      fetchComments();
-    }
-  }, [id]);
-
-  function onDocumentLoadSuccess({ numPages }: { numPages: number }): void {
-    setNumPages(numPages);
-  }
-
-  const [isCompleting, setIsCompleting] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
-
-  const handleComplete = async () => {
-    setIsCompleting(true);
-    try {
-      await api.post('/students/me/progress', { 
-        paper_id: id, 
-        status: 'completed' 
-      });
-      setIsCompleted(true);
-      alert("Paper marked as completed! Your progress has been updated.");
-    } catch (err) {
-      console.error("Failed to mark as completed:", err);
-      alert("Failed to update progress. Please try again.");
-    } finally {
-      setIsCompleting(false);
-    }
-  };
-
-  const handlePostComment = async () => {
-    if (!newComment.trim() || !id) return;
-    setIsPosting(true);
-    try {
-      const payload: any = { content: newComment };
-      if (replyTo) {
-        payload.parent_id = replyTo.id;
-      }
-      const res = await api.post(`/community/papers/${id}/comments`, payload);
-      // Add the new comment to the list instantly
-      setComments(prev => [...prev, res.data]);
-      setNewComment(""); // clear input
-      setReplyTo(null); // clear reply state
-    } catch (err) {
-      console.error("Error posting comment:", err);
-      alert("Failed to post comment. Please try again.");
-    } finally {
-      setIsPosting(false);
-    }
-  };
-
-  const handlePin = async (commentId: string) => {
-    try {
-      const res = await api.put(`/community/papers/${id}/comments/${commentId}/pin`);
-      setComments(prev => prev.map(c => c.id === commentId ? res.data : c));
-    } catch (err) {
-      console.error("Error pinning comment:", err);
-      alert("Failed to pin comment.");
-    }
-  };
-
-  // Group comments into a tree
-  const rootComments = comments.filter(c => !c.parent_id);
-  // Sort roots: pinned first, then by date
-  rootComments.sort((a, b) => {
-    if (a.is_pinned && !b.is_pinned) return -1;
-    if (!a.is_pinned && b.is_pinned) return 1;
-    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-  });
-  
-  const getReplies = (parentId: string) => {
-    return comments.filter(c => c.parent_id === parentId).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-  };
-
-  const CommentItem = ({ comment, isReply = false }: { comment: any, isReply?: boolean }) => {
-    const replies = getReplies(comment.id);
-    const canPin = user?.role === 'admin' || user?.role === 'tutor';
-
-    return (
-      <div className={`flex gap-4 ${isReply ? 'ml-12 mt-4' : 'mt-6'}`}>
-        <div className="w-9 h-9 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center text-primary font-bold text-xs">
-          {comment.author_initials}
-        </div>
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-bold text-slate-900">{comment.author_name}</span>
-            {comment.author_role === 'admin' && (
-              <span className="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
-                <Shield className="w-3 h-3" /> Admin
-              </span>
-            )}
-            {comment.author_role === 'tutor' && (
-              <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
-                <GraduationCap className="w-3 h-3" /> Tutor
-              </span>
-            )}
-            {comment.is_pinned && (
-              <span className="bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
-                <Pin className="w-3 h-3" /> Pinned
-              </span>
-            )}
-            <span className="text-slate-400 text-xs">{comment.created_at}</span>
-          </div>
-          <p className="text-sm text-slate-600 mb-2">{comment.content}</p>
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={() => setReplyTo({ id: comment.id, name: comment.author_name })}
-              className="text-[10px] font-bold text-primary hover:underline"
-            >
-              Reply
-            </button>
-            {canPin && !isReply && (
-              <button 
-                onClick={() => handlePin(comment.id)}
-                className="text-[10px] font-bold text-slate-400 hover:text-slate-600 flex items-center gap-1"
-              >
-                <Pin className="w-3 h-3" /> {comment.is_pinned ? 'Unpin' : 'Pin'}
-              </button>
-            )}
-          </div>
-
-          {/* Render Replies */}
-          {replies.length > 0 && (
-            <div className="border-l-2 border-slate-100 pl-4">
-              {replies.map(reply => (
-                <CommentItem key={reply.id} comment={reply} isReply={true} />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center pt-24">
-        <Loader2 className="w-10 h-10 text-primary animate-spin" />
-      </div>
-    );
-  }
-
-  if (error || !paper) {
-    return (
-      <div className="min-h-screen flex items-center justify-center pt-24 px-4 text-center">
-        <div>
-          <h2 className="text-2xl font-bold text-deep-brown mb-2">Oops!</h2>
-          <p className="text-slate-600 mb-6">{error || "Paper not found."}</p>
-          <Link to="/dashboard" className="btn-primary py-2 px-6">Back to Dashboard</Link>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="pt-24 pb-16 min-h-screen bg-slate-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        if (processedUrl.startsWith('http')) return processedUrl;
         
-        {/* Header & Navigation */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
-          <div>
-            <nav className="flex items-center text-[10px] font-bold tracking-widest text-slate-400 mb-3 uppercase">
-              <Link to="/dashboard" className="hover:text-primary transition-colors">Portal</Link>
-              <ChevronRight className="w-3 h-3 mx-2" />
-              <span className="text-deep-brown">{paper.title}</span>
+        const apiBase = api.defaults.baseURL || "";
+        let base = apiBase.split('/api/v1')[0];
+        
+        if (!base || base === "") {
+            base = `${window.location.protocol}//${window.location.hostname}:8080`;
+        }
+        
+        return `${base}${processedUrl}`;
+    };
+
+    const getVideoId = () => {
+        const rawId = paper?.videos?.[0]?.youtube_id;
+        return extractYoutubeId(rawId);
+    };
+
+    const handlePostComment = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newComment.trim()) return;
+        setIsSubmitting(true);
+        try {
+            const res = await api.post(`/community/papers/${paperId}/comments`, { content: newComment });
+            setComments([...comments, res.data]);
+            setNewComment('');
+            setTimeout(() => commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+        } catch (err) {
+            toast.error("Failed to post comment");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="fixed inset-0 flex flex-col items-center justify-center bg-white z-[9999]">
+                <div className="w-16 h-16 border-4 border-blue-50 border-t-primary rounded-full animate-spin"></div>
+                <p className="mt-4 text-[10px] font-black text-slate-400 uppercase tracking-widest animate-pulse">Initializing Study Engine</p>
+            </div>
+        );
+    }
+
+    if (!paper) {
+        return <div className="fixed inset-0 flex items-center justify-center text-slate-400 font-bold uppercase tracking-widest bg-slate-50 z-[9999]">Document not found</div>;
+    }
+
+    const currentPdfUrl = getPdfUrl();
+    const videoId = getVideoId();
+
+    return (
+        <div className="fixed inset-0 flex flex-col bg-white font-sans z-[9999] h-screen w-screen overflow-hidden">
+            {/* 🖥️ Top Master Toolbar */}
+            <header className="h-16 md:h-20 bg-white border-b border-slate-100 flex items-center justify-between px-4 md:px-8 shrink-0 relative z-10">
+                <div className="flex items-center gap-4">
+                    <button 
+                        onClick={() => navigate(-1)}
+                        className="p-2.5 hover:bg-slate-50 rounded-2xl text-slate-400 hover:text-primary transition-all active:scale-90"
+                    >
+                        <ArrowLeft className="w-6 h-6" />
+                    </button>
+                    <div className="flex flex-col">
+                        <h1 className="text-sm md:text-base font-black text-slate-800 line-clamp-1 leading-tight">{paper.year} - {paper.paper_type}</h1>
+                        <div className="flex items-center gap-2">
+                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                             <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                {paper.subject_name}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Desktop Mode Switcher */}
+                <div className="hidden lg:flex items-center bg-slate-100 p-1.5 rounded-[1.2rem] border border-slate-200">
+                    <ModeButton active={viewMode === 'pdf'} onClick={() => setViewMode('pdf')} icon={<FileText className="w-4 h-4" />} label="Question" />
+                    {videoId && (
+                        <>
+                            <ModeButton active={viewMode === 'split'} onClick={() => setViewMode('split')} icon={<Layout className="w-4 h-4" />} label="Dual Mode" />
+                            <ModeButton active={viewMode === 'video'} onClick={() => setViewMode('video')} icon={<Play className="w-4 h-4" />} label="Solution" />
+                        </>
+                    )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center bg-blue-50/50 p-1 rounded-xl border border-blue-100">
+                        <PdfTypeButton active={pdfType === 'question'} onClick={() => setPdfType('question')} label="Q" />
+                        <PdfTypeButton active={pdfType === 'answer'} onClick={() => setPdfType('answer')} label="A" />
+                    </div>
+                    <button 
+                        onClick={() => setShowSidebar(!showSidebar)}
+                        className={`p-2.5 rounded-xl transition-all ${showSidebar ? 'bg-primary text-white shadow-lg' : 'bg-white border border-slate-100 text-slate-400 hover:text-primary'}`}
+                    >
+                        <MessageSquare className="w-5 h-5" />
+                    </button>
+                </div>
+            </header>
+
+            {/* 📖 Workspace Content */}
+            <main className="flex-1 flex overflow-hidden relative bg-slate-50">
+                <div className="flex-1 flex flex-col lg:flex-row overflow-hidden w-full h-full">
+                    
+                    {/* PDF Pane */}
+                    <motion.div 
+                        initial={false}
+                        animate={{ 
+                            width: viewMode === 'pdf' ? '100%' : viewMode === 'video' ? '0%' : '50%',
+                            opacity: viewMode === 'video' ? 0 : 1,
+                            display: viewMode === 'video' ? 'none' : 'flex'
+                        }}
+                        className="h-full bg-white relative flex flex-col min-w-0"
+                    >
+                        <div className="flex-1 relative overflow-hidden">
+                             <iframe 
+                                key={`pdf-${pdfType}-${paperId}`}
+                                src={`${currentPdfUrl}#toolbar=0&navpanes=0`} 
+                                className="w-full h-full border-none"
+                                title="GCE Paper"
+                            />
+                            {/* Floating Overlay for Mobile Clarity */}
+                            <div className="absolute top-4 right-4 lg:hidden pointer-events-none">
+                                <div className="bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
+                                    <span className="text-[8px] font-black text-white uppercase tracking-widest">{pdfType === 'question' ? 'Question Paper' : 'Marking Scheme'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+
+                    {/* Resizer Handle */}
+                    {viewMode === 'split' && window.innerWidth >= 1024 && (
+                        <div className="w-1 bg-slate-200" />
+                    )}
+
+                    {/* Video Pane */}
+                    {videoId && (
+                        <motion.div 
+                            initial={false}
+                            animate={{ 
+                                width: viewMode === 'video' ? '100%' : viewMode === 'pdf' ? '0%' : '50%',
+                                opacity: viewMode === 'pdf' ? 0 : 1,
+                                display: viewMode === 'pdf' ? 'none' : 'flex'
+                            }}
+                            className="h-full bg-slate-900 relative flex flex-col"
+                        >
+                            <div className="flex-1 flex flex-col items-center justify-center">
+                                <div className="w-full h-full">
+                                    <iframe
+                                        src={`https://www.youtube.com/embed/${videoId}?modestbranding=1&rel=0&autoplay=0`}
+                                        className="w-full h-full"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                    />
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </div>
+
+                {/* 💬 Discussion Sidebar */}
+                <AnimatePresence>
+                    {showSidebar && (
+                        <motion.aside 
+                            initial={{ x: 400 }}
+                            animate={{ x: 0 }}
+                            exit={{ x: 400 }}
+                            className="absolute right-0 top-0 bottom-0 w-full md:w-[380px] bg-white border-l border-slate-100 shadow-2xl z-[60] flex flex-col"
+                        >
+                            <div className="h-16 md:h-20 border-b border-slate-50 flex items-center justify-between px-6 shrink-0">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                                        <MessageSquare className="w-4 h-4" />
+                                    </div>
+                                    <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Collaborative Feed</h3>
+                                </div>
+                                <button onClick={() => setShowSidebar(false)} className="p-2 hover:bg-slate-50 rounded-xl text-slate-400">
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-slate-50/20">
+                                {comments.map((comment) => (
+                                    <div key={comment.id} className="flex flex-col gap-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-[10px] font-bold shadow-sm">
+                                                {comment.author_name?.charAt(0).toUpperCase()}
+                                            </div>
+                                            <span className="text-[9px] font-black text-slate-900 uppercase tracking-widest">{comment.author_name}</span>
+                                        </div>
+                                        <div className="p-4 bg-white border border-slate-100 rounded-2xl text-sm font-medium text-slate-600 leading-relaxed shadow-sm">
+                                            {comment.content}
+                                        </div>
+                                    </div>
+                                ))}
+                                <div ref={commentsEndRef} />
+                            </div>
+
+                            <div className="p-6 border-t border-slate-100 bg-white">
+                                <form onSubmit={handlePostComment} className="relative">
+                                    <textarea 
+                                        required
+                                        value={newComment}
+                                        onChange={(e) => setNewComment(e.target.value)}
+                                        placeholder="Ask a question..."
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 px-6 pr-14 text-sm font-medium focus:outline-none focus:border-primary transition-all resize-none min-h-[56px]"
+                                        rows={1}
+                                    />
+                                    <button 
+                                        type="submit"
+                                        disabled={isSubmitting || !newComment.trim()}
+                                        className="absolute right-2.5 bottom-2.5 w-10 h-10 bg-primary text-white rounded-xl shadow-lg flex items-center justify-center disabled:opacity-30"
+                                    >
+                                        <Send className="w-4 h-4" />
+                                    </button>
+                                </form>
+                            </div>
+                        </motion.aside>
+                    )}
+                </AnimatePresence>
+            </main>
+
+            {/* 📱 Mobile Navigation Bar - Fixed at the bottom of the fixed container */}
+            <nav className="lg:hidden h-20 bg-white border-t border-slate-100 flex items-center justify-around px-2 shrink-0 z-[70] shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
+                <MobileTab 
+                    active={viewMode === 'pdf'} 
+                    onClick={() => setViewMode('pdf')} 
+                    icon={<FileText className="w-5 h-5" />} 
+                    label="PAPER" 
+                />
+                {videoId && (
+                    <MobileTab 
+                        active={viewMode === 'video'} 
+                        onClick={() => setViewMode('video')} 
+                        icon={<Video className="w-6 h-6" />} 
+                        label="VIDEO SOLUTION" 
+                        highlight
+                    />
+                )}
+                <MobileTab 
+                    active={showSidebar} 
+                    onClick={() => setShowSidebar(!showSidebar)} 
+                    icon={<MessageSquare className="w-5 h-5" />} 
+                    label="DISCUSS" 
+                />
             </nav>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl md:text-3xl font-bold text-deep-brown">{paper.title}</h1>
-              <Badge className="bg-primary/10 text-primary border-primary/20 rounded-md py-0.5 px-2 text-[10px]">Solved</Badge>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" className="gap-2 text-xs border-slate-200">
-              <Download className="w-3.5 h-3.5" /> Download
-            </Button>
-            <Button 
-              variant="primary" 
-              size="sm" 
-              className="gap-2 text-xs px-6 shadow-sm"
-              onClick={handleComplete}
-              disabled={isCompleting || isCompleted}
-            >
-              {isCompleting ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : isCompleted ? (
-                <CheckCircle className="w-3.5 h-3.5" />
-              ) : (
-                <CheckCircle className="w-3.5 h-3.5" />
-              )}
-              {isCompleted ? "Completed" : "Complete"}
-            </Button>
-          </div>
         </div>
-
-        {/* Navigation Tabs - Desktop & Mobile combined logic */}
-        <div className="flex bg-white border border-slate-200 p-1 rounded-xl mb-6 w-fit shadow-sm">
-          {[
-            { id: 'video', icon: PlayCircle, label: 'Video Solution' },
-            { id: 'pdf', icon: FileText, label: 'Paper View' },
-            { id: 'discuss', icon: MessageCircle, label: 'Discussion' }
-          ].map((tab) => (
-            <TabButton 
-              key={tab.id}
-              active={activeTab === tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              icon={<tab.icon className="w-4 h-4" />}
-              label={tab.label}
-            />
-          ))}
-        </div>
-
-        {/* Main Content Area */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* Main Viewer */}
-          <div className="lg:col-span-8 space-y-6">
-            {activeTab === 'video' && (
-              <div className="w-full aspect-video bg-slate-900 rounded-2xl overflow-hidden shadow-lg">
-                <iframe 
-                  src={paper.videoUrl} 
-                  title="Video player" 
-                  className="w-full h-full border-0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                  allowFullScreen
-                ></iframe>
-              </div>
-            )}
-
-            {activeTab === 'pdf' && (
-              <Card className="overflow-hidden flex flex-col border-slate-200 shadow-sm rounded-2xl">
-                <div className="p-2.5 border-b border-slate-100 bg-white flex flex-wrap items-center justify-between gap-4">
-                  <div className="flex bg-slate-100 p-1 rounded-lg">
-                    <button 
-                      onClick={() => setPdfType('question')}
-                      className={`px-4 py-1.5 rounded-md text-[11px] font-bold transition-all ${pdfType === 'question' ? 'bg-white shadow-sm text-primary' : 'text-slate-500 hover:text-slate-900'}`}
-                    >
-                      Questions
-                    </button>
-                    <button 
-                      onClick={() => setPdfType('answer')}
-                      className={`px-4 py-1.5 rounded-md text-[11px] font-bold transition-all ${pdfType === 'answer' ? 'bg-white shadow-sm text-primary' : 'text-slate-500 hover:text-slate-900'}`}
-                    >
-                      Answers
-                    </button>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => setScale(s => Math.max(0.5, s - 0.1))} className="p-1.5 hover:bg-slate-100 rounded-md"><ZoomOut className="w-4 h-4 text-slate-500" /></button>
-                    <span className="text-[10px] font-bold text-slate-400 w-10 text-center">{Math.round(scale * 100)}%</span>
-                    <button onClick={() => setScale(s => Math.min(2.0, s + 0.1))} className="p-1.5 hover:bg-slate-100 rounded-md"><ZoomIn className="w-4 h-4 text-slate-500" /></button>
-                  </div>
-                </div>
-                
-                <div className="min-h-[600px] overflow-auto bg-slate-800 flex flex-col items-center p-6 relative">
-                  <Document
-                    file={pdfType === 'question' ? paper.questionPdf : paper.answerPdf}
-                    onLoadSuccess={onDocumentLoadSuccess}
-                    loading={<div className="flex items-center justify-center h-full text-white font-bold py-20">Loading GCE Paper...</div>}
-                    className="drop-shadow-2xl"
-                  >
-                    <Page 
-                      pageNumber={pageNumber} 
-                      scale={scale} 
-                      renderTextLayer={false} 
-                      renderAnnotationLayer={false}
-                      className="bg-white"
-                    />
-                  </Document>
-
-                  {numPages && (
-                    <div className="mt-8 flex justify-center items-center gap-4 text-white pb-4">
-                      <button 
-                        onClick={() => setPageNumber(p => Math.max(1, p - 1))} 
-                        disabled={pageNumber <= 1}
-                        className="px-4 py-1.5 bg-white/10 hover:bg-white/20 rounded-md text-[11px] font-bold disabled:opacity-30 transition-colors"
-                      >
-                        Prev
-                      </button>
-                      <span className="text-[11px] font-bold">Page {pageNumber} of {numPages}</span>
-                      <button 
-                        onClick={() => setPageNumber(p => Math.min(numPages, p + 1))} 
-                        disabled={pageNumber >= numPages}
-                        className="px-4 py-1.5 bg-white/10 hover:bg-white/20 rounded-md text-[11px] font-bold disabled:opacity-30 transition-colors"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </Card>
-            )}
-
-            {activeTab === 'discuss' && (
-              <Card className="overflow-hidden flex flex-col border-slate-200 shadow-sm rounded-2xl min-h-[500px]">
-                <div className="p-4 border-b border-slate-100 bg-white">
-                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <MessageCircle className="w-4 h-4 text-primary" />
-                    Community Discussion
-                  </h3>
-                </div>
-                <div className="flex-1 p-6 space-y-6 max-h-[400px] overflow-y-auto">
-                  {rootComments.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                      <MessageCircle className="w-12 h-12 mb-2 opacity-20" />
-                      <p>No comments yet. Be the first to ask a question!</p>
-                    </div>
-                  ) : (
-                    rootComments.map((comment) => (
-                      <CommentItem key={comment.id} comment={comment} />
-                    ))
-                  )}
-                </div>
-                <div className="p-4 border-t border-slate-100 bg-white flex flex-col gap-3">
-                  {replyTo && (
-                    <div className="flex items-center justify-between bg-primary/5 px-3 py-2 rounded-lg text-xs font-bold text-primary">
-                      <span>Replying to {replyTo.name}</span>
-                      <button onClick={() => setReplyTo(null)} className="text-slate-400 hover:text-slate-600">
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-                  <div className="flex gap-3">
-                    <input 
-                      type="text" 
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handlePostComment()}
-                      placeholder={replyTo ? "Write a reply..." : "Add to discussion..."}
-                      className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary" 
-                    />
-                    <Button 
-                      size="sm" 
-                      className="px-6 text-xs"
-                      onClick={handlePostComment}
-                      isLoading={isPosting}
-                      disabled={!newComment.trim()}
-                    >
-                      Post
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            )}
-          </div>
-
-          {/* Sidebar / Extra Info */}
-          <div className="lg:col-span-4 space-y-6">
-            <Card className="border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-              <div className="p-4 border-b border-slate-100 bg-slate-50">
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <PlayCircle className="w-4 h-4 text-primary" />
-                  Jump to Section
-                </h3>
-              </div>
-              <CardContent className="p-2">
-                {paper.timestamps.map((ts: { time: string; label: string }, idx: number) => (
-                  <button key={idx} className="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-50 flex items-center gap-4 transition-colors group">
-                    <span className="text-primary font-bold bg-primary/5 px-2 py-0.5 rounded text-[10px]">{ts.time}</span>
-                    <span className="text-sm text-slate-700 group-hover:text-primary font-semibold">{ts.label}</span>
-                  </button>
-                ))}
-              </CardContent>
-            </Card>
-
-            <div className="bg-primary/5 border border-primary/10 rounded-2xl p-6">
-              <h4 className="text-xs font-bold text-primary uppercase tracking-widest mb-3">Expert Insight</h4>
-              <p className="text-sm text-slate-600 leading-relaxed font-medium">
-                This paper focuses heavily on mechanics. Pay close attention to the energy conservation diagrams in section 3.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+    );
 };
 
-export default PaperPage;
+// Internal Helper Components
+const ModeButton = ({ active, onClick, icon, label }: any) => (
+    <button 
+        onClick={onClick}
+        className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+            active ? 'bg-white text-primary shadow-sm ring-1 ring-black/5' : 'text-slate-400 hover:text-slate-600'
+        }`}
+    >
+        {icon}
+        <span>{label}</span>
+    </button>
+);
 
+const PdfTypeButton = ({ active, onClick, label }: any) => (
+    <button 
+        onClick={onClick}
+        className={`w-9 h-9 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+            active ? 'bg-primary text-white shadow-lg' : 'bg-white text-slate-400 hover:text-primary'
+        }`}
+    >
+        {label}
+    </button>
+);
+
+const MobileTab = ({ active, onClick, icon, label, highlight }: any) => (
+    <button 
+        onClick={onClick}
+        className={`flex flex-col items-center gap-1.5 px-4 transition-all ${
+            active ? 'text-primary' : highlight ? 'text-blue-400' : 'text-slate-300'
+        }`}
+    >
+        <div className={`p-2 rounded-2xl transition-all ${active ? 'bg-primary/10' : highlight ? 'bg-blue-50' : ''}`}>
+            {icon}
+        </div>
+        <span className={`text-[7px] font-black uppercase tracking-[0.1em] ${active ? 'opacity-100' : 'opacity-70'}`}>{label}</span>
+    </button>
+);
+
+export default PaperPage;

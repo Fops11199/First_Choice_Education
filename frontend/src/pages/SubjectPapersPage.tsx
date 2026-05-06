@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api/api';
 
 const SubjectPapersPage = () => {
-  const { id } = useParams();
+  const { subjectId } = useParams();
   const { user } = useAuth();
   const [data, setData] = useState<any>(null);
   const [isEnrolled, setIsEnrolled] = useState<boolean>(false);
@@ -15,16 +15,17 @@ const SubjectPapersPage = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!subjectId) return;
       try {
         const [papersRes, enrolRes] = await Promise.all([
-          api.get(`/content/subjects/${id}/papers`),
+          api.get(`/content/subjects/${subjectId}/papers`),
           user?.role === 'student' ? api.get('/students/me/enrollments') : Promise.resolve({ data: [] })
         ]);
         
         setData(papersRes.data);
         
         if (user?.role === 'student') {
-          const enrolled = enrolRes.data.some((e: any) => e.subject_id === id);
+          const enrolled = enrolRes.data.some((e: any) => e.subject_id === subjectId);
           setIsEnrolled(enrolled);
         } else {
           setIsEnrolled(true); // Admins and tutors are always "enrolled"
@@ -36,13 +37,13 @@ const SubjectPapersPage = () => {
       }
     };
     fetchData();
-  }, [id, user]);
+  }, [subjectId, user]);
 
   const handleEnroll = async () => {
-    if (!id || user?.role !== 'student') return;
+    if (!subjectId || user?.role !== 'student') return;
     setEnrolling(true);
     try {
-      await api.post('/students/me/enrollments', { subject_id: id });
+      await api.post('/students/me/enrollments', { subject_id: subjectId });
       setIsEnrolled(true);
     } catch (err) {
       console.error("Failed to enroll:", err);
@@ -127,7 +128,7 @@ const SubjectPapersPage = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
             >
-              <Link to={`/paper/${paper.id}`}>
+              <Link to={`/papers/${paper.id}`}>
                 <div className="pattern-card group p-6 flex items-center justify-between hover:border-primary/30 transition-all">
                   <div className="flex items-center gap-5">
                     <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-all">

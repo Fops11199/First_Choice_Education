@@ -1,13 +1,24 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session
+from sqlmodel import Session, select
 from db.database import get_session
 from models.user import User
-from core.security import get_current_user, verify_password, get_password_hash
+from core.security import get_current_user, verify_password, get_password_hash, require_user
 from pydantic import BaseModel
 import uuid
+from typing import List
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
+@router.get("/search")
+def search_users(
+    query: str,
+    db: Session = Depends(get_session),
+    current_user: User = Depends(require_user)
+):
+    """Search for users by name (for invitations)."""
+    statement = select(User).where(User.full_name.ilike(f"%{query}%")).limit(10)
+    users = db.exec(statement).all()
+    return [{"id": u.id, "full_name": u.full_name, "role": u.role} for u in users]
 
 @router.get("/me")
 def get_my_profile(current_user: User = Depends(get_current_user)):
