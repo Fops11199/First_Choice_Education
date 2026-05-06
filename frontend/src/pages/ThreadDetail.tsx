@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MessageCircle, Send, User, Shield, GraduationCap, Loader2, MoreVertical, MessageSquare, Info, Users, Reply as ReplyIcon, X } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Send, Shield, GraduationCap, Loader2, MoreVertical, Info, Users, Reply as ReplyIcon, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/api';
 import { useAuth } from '../context/AuthContext';

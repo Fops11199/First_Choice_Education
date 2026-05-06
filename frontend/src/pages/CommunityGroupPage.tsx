@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-    Users, MessageSquare, Shield, Settings, UserPlus, 
-    Check, X, Search, Loader2, ArrowLeft, Info, 
-    MoreHorizontal, Plus, Filter, Calendar, Bell, ChevronRight
+    Users, MessageSquare, Shield, UserPlus, 
+    Check, X, Search, Loader2, ArrowLeft, 
+    Plus, Filter, ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/api';
@@ -26,9 +26,6 @@ const CommunityGroupPage = () => {
 
     // Admin States
     const [joinRequests, setJoinRequests] = useState<any[]>([]);
-    const [userSearchQuery, setUserSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<any[]>([]);
-    const [isSearching, setIsSearching] = useState(false);
 
     const fetchData = async () => {
         try {
@@ -77,28 +74,7 @@ const CommunityGroupPage = () => {
         }
     };
 
-    const handleSearchUsers = async () => {
-        if (!userSearchQuery.trim()) return;
-        setIsSearching(true);
-        try {
-            const res = await api.get(`/users/search?q=${userSearchQuery}`);
-            setSearchResults(res.data);
-        } catch (err) {
-            console.error('Search failed', err);
-        } finally {
-            setIsSearching(false);
-        }
-    };
 
-    const handleInvite = async (userId: string) => {
-        try {
-            await api.post(`/community/${id}/invite`, null, { params: { user_id: userId } });
-            alert('Invitation sent!');
-            setSearchResults(searchResults.filter(u => u.id !== userId));
-        } catch (err) {
-            alert('Failed to invite user');
-        }
-    };
 
     const handleApprove = async (userId: string) => {
         try {

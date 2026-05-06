@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Toaster } from 'sonner';
@@ -11,33 +12,40 @@ import AdminLayout from './layouts/AdminLayout';
 import CleanLayout from './layouts/CleanLayout';
 
 // Auth
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import OnboardingPage from './pages/OnboardingPage';
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
 import ProtectedRoute from './components/Auth/AuthRoutes';
 
 // Public Pages
-import LandingPage from './pages/Home';
-import GCELevelsPage from './pages/LevelSelector';
-import SubjectsPage from './pages/SubjectsPage';
-import SubjectPapersPage from './pages/SubjectPapersPage';
-import PaperPage from './pages/PaperPage';
-import CommunityPage from './pages/CommunityPage';
-import CommunityGroupPage from './pages/CommunityGroupPage';
-import ThreadDetailPage from './pages/ThreadDetail';
+const LandingPage = lazy(() => import('./pages/Home'));
+const GCELevelsPage = lazy(() => import('./pages/LevelSelector'));
+const SubjectsPage = lazy(() => import('./pages/SubjectsPage'));
+const SubjectPapersPage = lazy(() => import('./pages/SubjectPapersPage'));
+const PaperPage = lazy(() => import('./pages/PaperPage'));
+const CommunityPage = lazy(() => import('./pages/CommunityPage'));
+const CommunityGroupPage = lazy(() => import('./pages/CommunityGroupPage'));
+const ThreadDetailPage = lazy(() => import('./pages/ThreadDetail'));
 
 // Dashboard Pages
-import StudentDashboard from './pages/Dashboard';
-import SettingsPage from './pages/SettingsPage';
+const StudentDashboard = lazy(() => import('./pages/Dashboard'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 
 // Admin Pages
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminSubjects from './pages/admin/AdminSubjects';
-import AdminPapers from './pages/admin/AdminPapers';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminTestimonials from './pages/admin/AdminTestimonials';
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminSubjects = lazy(() => import('./pages/admin/AdminSubjects'));
+const AdminPapers = lazy(() => import('./pages/admin/AdminPapers'));
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminTestimonials = lazy(() => import('./pages/admin/AdminTestimonials'));
+
+// Loading Fallback
+const PageLoader = () => (
+  <div className="h-screen w-full flex items-center justify-center bg-white/50 backdrop-blur-sm fixed inset-0 z-[100]">
+    <div className="w-10 h-10 border-4 border-primary/10 border-t-primary rounded-full animate-spin"></div>
+  </div>
+);
 
 function App() {
   const [isAppLoading, setIsAppLoading] = useState(true);
@@ -58,47 +66,49 @@ function App() {
         {isAppLoading ? (
           <Preloader key="preloader" />
         ) : (
-          <Routes>
-            {/* Public Routes */}
-            <Route element={<PublicLayout />}>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/levels" element={<GCELevelsPage />} />
-              <Route path="/subjects" element={<SubjectsPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
-            </Route>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              {/* Public Routes */}
+              <Route element={<PublicLayout />}>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/levels" element={<GCELevelsPage />} />
+                <Route path="/subjects" element={<SubjectsPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+              </Route>
 
-            {/* Clean Interactive Layout (No Footer) */}
-            <Route element={<CleanLayout />}>
-               <Route path="/subjects/:subjectId/papers" element={<SubjectPapersPage />} />
-               <Route path="/papers/:paperId" element={<PaperPage />} />
-               <Route path="/community" element={<CommunityPage />} />
-               <Route path="/community/group/:groupId" element={<CommunityGroupPage />} />
-               <Route path="/community/thread/:threadId" element={<ThreadDetailPage />} />
-            </Route>
+              {/* Clean Interactive Layout (No Footer) */}
+              <Route element={<CleanLayout />}>
+                <Route path="/subjects/:subjectId/papers" element={<SubjectPapersPage />} />
+                <Route path="/papers/:paperId" element={<PaperPage />} />
+                <Route path="/community" element={<CommunityPage />} />
+                <Route path="/community/group/:groupId" element={<CommunityGroupPage />} />
+                <Route path="/community/thread/:threadId" element={<ThreadDetailPage />} />
+              </Route>
 
-            {/* Student/Tutor Dashboard Routes */}
-            <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-              <Route path="/dashboard" element={<StudentDashboard />} />
-              <Route path="/settings" element={<SettingsPage />} />
-            </Route>
+              {/* Student/Tutor Dashboard Routes */}
+              <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                <Route path="/dashboard" element={<StudentDashboard />} />
+                <Route path="/settings" element={<SettingsPage />} />
+              </Route>
 
-            {/* Admin Routes */}
-            <Route path="/admin_dashboard" element={<ProtectedRoute adminOnly><AdminLayout /></ProtectedRoute>}>
-              <Route index element={<AdminDashboard />} />
-              <Route path="subjects" element={<AdminSubjects />} />
-              <Route path="subjects/:subjectId/papers" element={<AdminPapers />} />
-              <Route path="users" element={<AdminUsers />} />
-              <Route path="testimonials" element={<AdminTestimonials />} />
-            </Route>
+              {/* Admin Routes */}
+              <Route path="/admin_dashboard" element={<ProtectedRoute adminOnly><AdminLayout /></ProtectedRoute>}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="subjects" element={<AdminSubjects />} />
+                <Route path="subjects/:subjectId/papers" element={<AdminPapers />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="testimonials" element={<AdminTestimonials />} />
+              </Route>
 
-            {/* Onboarding */}
-            <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
-            
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+              {/* Onboarding */}
+              <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
+              
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
         )}
       </AnimatePresence>
     </Router>

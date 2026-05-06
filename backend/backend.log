@@ -1,0 +1,4 @@
+nohup: ignoring input
+INFO:     Will watch for changes in these directories: ['/home/fops/firstchoice-project/First_Choice_Education/backend']
+ERROR:    [Errno 98] Address already in use
+🚀 StorageService: Cloudflare R2 Active

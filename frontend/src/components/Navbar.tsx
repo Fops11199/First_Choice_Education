@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, Menu, X, User, LogOut, Settings, AlertCircle, GraduationCap, Bell } from 'lucide-react';
+import { BookOpen, Menu, X, User, LogOut, Settings, AlertCircle, GraduationCap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import NotificationMenu from './NotificationMenu';

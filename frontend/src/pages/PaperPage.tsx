@@ -1,12 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-    ArrowLeft, MessageSquare, Shield, 
-    Send, Loader2, Maximize2, Minimize2, 
-    ChevronRight, ChevronLeft, GraduationCap, 
-    MoreVertical, Info, FileText, Reply as ReplyIcon, X,
-    Play, Layout, FileSearch, CheckCircle2,
-    Eye, Monitor, Smartphone, Video
+    ArrowLeft, MessageSquare, 
+    Send, FileText, X,
+    Play, Layout, Video
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/api';
@@ -16,7 +13,7 @@ import { toast } from 'sonner';
 const PaperPage = () => {
     const { paperId } = useParams();
     const navigate = useNavigate();
-    const { user: currentUser } = useAuth();
+    useAuth();
     
     const [paper, setPaper] = useState<any>(null);
     const [comments, setComments] = useState<any[]>([]);
@@ -77,21 +74,16 @@ const PaperPage = () => {
         
         if (!rawUrl) return "";
         
-        let processedUrl = rawUrl;
-        if (processedUrl.includes('localhost:8080')) {
-            processedUrl = processedUrl.split('localhost:8080')[1];
-        }
+        // 1. If it's already a full HTTP URL (like R2), return it directly
+        if (rawUrl.startsWith('http')) return rawUrl;
 
-        if (processedUrl.startsWith('http')) return processedUrl;
-        
+        // 2. If it's a relative path (local storage), we need to prefix it with the backend origin
+        // api.defaults.baseURL is usually something like "http://domain.com/api/v1"
+        // We want the origin: "http://domain.com"
         const apiBase = api.defaults.baseURL || "";
-        let base = apiBase.split('/api/v1')[0];
+        const origin = apiBase.split('/api/v1')[0] || window.location.origin.replace('5173', '8080');
         
-        if (!base || base === "") {
-            base = `${window.location.protocol}//${window.location.hostname}:8080`;
-        }
-        
-        return `${base}${processedUrl}`;
+        return `${origin}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
     };
 
     const getVideoId = () => {

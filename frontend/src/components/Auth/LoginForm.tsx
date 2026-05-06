@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { BookOpen, Mail, Lock, ArrowRight, Globe, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -83,7 +83,7 @@ const LoginForm = () => {
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                   <Lock className="w-3 h-3" /> Security Key
                 </label>
-                <Link to="/forgot-password" size="sm" className="text-[10px] font-bold text-primary hover:text-blue-500 uppercase tracking-widest">
+                <Link to="/forgot-password" className="text-[10px] font-bold text-primary hover:text-blue-500 uppercase tracking-widest">
                   Lost Access?
                 </Link>
               </div>
