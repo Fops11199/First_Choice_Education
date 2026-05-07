@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-    ArrowLeft, MessageSquare,
-    Send, FileText,
-    Play, Layout, Video, X
+import {
+  ArrowLeft, MessageSquare, Send, FileText, Play, Reply as ReplyIcon, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/api';
@@ -11,352 +9,393 @@ import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 
 const PaperPage = () => {
-    const { paperId } = useParams();
-    const navigate = useNavigate();
-    useAuth(); // keep context connected
-    
-    const [paper, setPaper] = useState<any>(null);
-    const [comments, setComments] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    
-    // View state
-    const [viewMode, setViewMode] = useState<'split' | 'video' | 'pdf'>('split');
-    const [pdfType, setPdfType] = useState<'question' | 'answer'>('question');
-    const [showSidebar, setShowSidebar] = useState(false);
-    
-    // Chat state
-    const [newComment, setNewComment] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const commentsEndRef = useRef<null | HTMLDivElement>(null);
+  const { paperId } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
-    const fetchPaperAndComments = async () => {
-        try {
-            const [paperRes, commentsRes] = await Promise.all([
-                api.get(`/content/papers/${paperId}`),
-                api.get(`/community/papers/${paperId}/comments`)
-            ]);
-            setPaper(paperRes.data);
-            setComments(commentsRes.data);
-            
-            // Auto-adjust view mode based on device and availability
-            if (window.innerWidth < 1024) {
-                setViewMode('pdf');
-            } else if (!paperRes.data.videos?.length) {
-                setViewMode('pdf');
-            }
-        } catch (err) {
-            console.error('Error fetching paper data:', err);
-            toast.error("Failed to load workspace");
-        } finally {
-            setLoading(false);
-        }
+  const [paper, setPaper] = useState<any>(null);
+  const [comments, setComments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Tab state: 'paper' | 'discussion'
+  const [activeTab, setActiveTab] = useState<'paper' | 'discussion'>('paper');
+  const [pdfType, setPdfType] = useState<'question' | 'answer'>('question');
+  const [newComment, setNewComment] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [replyTo, setReplyTo] = useState<any>(null);
+
+  const commentsEndRef = useRef<HTMLDivElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [inputBottom, setInputBottom] = useState(0);
+
+  // ── Keyboard-aware input offset (mobile) ─────────────────────
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => {
+      const offset = window.innerHeight - vv.height - vv.offsetTop;
+      setInputBottom(offset > 20 ? offset : 0);
     };
-
-    useEffect(() => {
-        fetchPaperAndComments();
-        // Force the app to hide any global scrollbars and ensure we are on top
-        document.body.style.overflow = 'hidden';
-        return () => { document.body.style.overflow = 'unset'; };
-    }, [paperId]);
-
-    const extractYoutubeId = (url: string) => {
-        if (!url) return null;
-        if (url.length === 11) return url;
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-        const match = url.match(regExp);
-        return (match && match[2].length === 11) ? match[2] : url;
+    vv.addEventListener('resize', onResize);
+    vv.addEventListener('scroll', onResize);
+    return () => {
+      vv.removeEventListener('resize', onResize);
+      vv.removeEventListener('scroll', onResize);
     };
+  }, []);
 
-    const getPdfUrl = () => {
-        if (!paper) return "";
-        const targetPdf = paper.pdfs?.find((p: any) => p.pdf_type === pdfType) || paper.pdfs?.[0];
-        const rawUrl = targetPdf?.file_url || paper.file_url;
-        
-        if (!rawUrl) return "";
-        
-        // 1. If it's already a full HTTP URL (like R2), return it directly
-        if (rawUrl.startsWith('http')) return rawUrl;
-
-        // 2. If it's a relative path (local storage), we need to prefix it with the backend origin
-        // api.defaults.baseURL is usually something like "http://domain.com/api/v1"
-        // We want the origin: "http://domain.com"
-        const apiBase = api.defaults.baseURL || "";
-        const origin = apiBase.split('/api/v1')[0] || window.location.origin.replace('5173', '8080');
-        
-        return `${origin}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
-    };
-
-    const getVideoId = () => {
-        const rawId = paper?.videos?.[0]?.youtube_id;
-        return extractYoutubeId(rawId);
-    };
-
-    const handlePostComment = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!newComment.trim()) return;
-        setIsSubmitting(true);
-        try {
-            const res = await api.post(`/community/papers/${paperId}/comments`, { content: newComment });
-            setComments([...comments, res.data]);
-            setNewComment('');
-            setTimeout(() => commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-        } catch (err) {
-            toast.error("Failed to post comment");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    if (loading) {
-        return (
-            <div className="fixed inset-0 flex flex-col items-center justify-center bg-white z-[9999]">
-                <div className="w-16 h-16 border-4 border-blue-50 border-t-primary rounded-full animate-spin"></div>
-                <p className="mt-4 text-[10px] font-black text-slate-400 uppercase tracking-widest animate-pulse">Initializing Study Engine</p>
-            </div>
-        );
+  const fetchPaperAndComments = async () => {
+    try {
+      const [paperRes, commentsRes] = await Promise.all([
+        api.get(`/content/papers/${paperId}`),
+        api.get(`/community/papers/${paperId}/comments`),
+      ]);
+      setPaper(paperRes.data);
+      setComments(commentsRes.data);
+    } catch (err) {
+      console.error('Error fetching paper data:', err);
+      toast.error('Failed to load paper workspace');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    if (!paper) {
-        return <div className="fixed inset-0 flex items-center justify-center text-slate-400 font-bold uppercase tracking-widest bg-slate-50 z-[9999]">Document not found</div>;
+  useEffect(() => {
+    fetchPaperAndComments();
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [paperId]);
+
+  useEffect(() => {
+    if (activeTab === 'discussion') {
+      setTimeout(() => commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     }
+  }, [activeTab, comments.length]);
 
-    const currentPdfUrl = getPdfUrl();
-    const videoId = getVideoId();
+  const extractYoutubeId = (url: string) => {
+    if (!url) return null;
+    if (url.length === 11) return url;
+    const match = url.match(/^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/);
+    return match && match[2].length === 11 ? match[2] : url;
+  };
 
+  const getPdfUrl = () => {
+    if (!paper) return '';
+    const target = paper.pdfs?.find((p: any) => p.pdf_type === pdfType) || paper.pdfs?.[0];
+    const rawUrl = target?.file_url || paper.file_url;
+    if (!rawUrl) return '';
+    if (rawUrl.startsWith('http')) return rawUrl;
+    
+    const apiBase = api.defaults.baseURL || '';
+    let origin = apiBase.split('/api/v1')[0];
+    
+    const isLocalhostApi = origin.includes('localhost') || origin.includes('127.0.0.1');
+    const isRemoteAccess = !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1');
+
+    if (!origin || origin === '' || origin.startsWith('/') || (isLocalhostApi && isRemoteAccess)) {
+      // Fallback for VPS/Production or if API is mistakenly pointing to localhost
+      origin = `${window.location.protocol}//${window.location.hostname}:8080`;
+      
+      // If we are on standard ports (80/443), we might not even need :8080 if Nginx is used
+      // But based on user feedback, port 8080 is the backend port.
+    }
+    
+    return `${origin}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
+  };
+
+  const getVideoId = () => extractYoutubeId(paper?.videos?.[0]?.youtube_id);
+
+  const handlePostComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim()) return;
+    setIsSubmitting(true);
+    try {
+      const res = await api.post(`/community/papers/${paperId}/comments`, { 
+        content: newComment,
+        parent_id: replyTo?.id || null
+      });
+      setComments(prev => [...prev, res.data]);
+      setNewComment('');
+      setReplyTo(null);
+      setTimeout(() => commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    } catch {
+      toast.error('Failed to post comment');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (loading) {
     return (
-        <div className="fixed inset-0 flex flex-col bg-white font-sans z-[9999] h-screen w-screen overflow-hidden">
-            {/* 🖥️ Top Master Toolbar */}
-            <header className="h-16 md:h-20 bg-white border-b border-slate-100 flex items-center justify-between px-4 md:px-8 shrink-0 relative z-10">
-                <div className="flex items-center gap-4">
-                    <button 
-                        onClick={() => navigate(-1)}
-                        className="p-2.5 hover:bg-slate-50 rounded-2xl text-slate-400 hover:text-primary transition-all active:scale-90"
-                    >
-                        <ArrowLeft className="w-6 h-6" />
-                    </button>
-                    <div className="flex flex-col">
-                        <h1 className="text-sm md:text-base font-black text-slate-800 line-clamp-1 leading-tight">{paper.year} - {paper.paper_type}</h1>
-                        <div className="flex items-center gap-2">
-                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                             <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                {paper.subject_name}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Desktop Mode Switcher */}
-                <div className="hidden lg:flex items-center bg-slate-100 p-1.5 rounded-[1.2rem] border border-slate-200">
-                    <ModeButton active={viewMode === 'pdf'} onClick={() => setViewMode('pdf')} icon={<FileText className="w-4 h-4" />} label="Question" />
-                    {videoId && (
-                        <>
-                            <ModeButton active={viewMode === 'split'} onClick={() => setViewMode('split')} icon={<Layout className="w-4 h-4" />} label="Dual Mode" />
-                            <ModeButton active={viewMode === 'video'} onClick={() => setViewMode('video')} icon={<Play className="w-4 h-4" />} label="Solution" />
-                        </>
-                    )}
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center bg-blue-50/50 p-1 rounded-xl border border-blue-100">
-                        <PdfTypeButton active={pdfType === 'question'} onClick={() => setPdfType('question')} label="Q" />
-                        <PdfTypeButton active={pdfType === 'answer'} onClick={() => setPdfType('answer')} label="A" />
-                    </div>
-                    <button 
-                        onClick={() => setShowSidebar(!showSidebar)}
-                        className={`p-2.5 rounded-xl transition-all ${showSidebar ? 'bg-primary text-white shadow-lg' : 'bg-white border border-slate-100 text-slate-400 hover:text-primary'}`}
-                    >
-                        <MessageSquare className="w-5 h-5" />
-                    </button>
-                </div>
-            </header>
-
-            {/* 📖 Workspace Content */}
-            <main className="flex-1 flex overflow-hidden relative bg-slate-50">
-                <div className="flex-1 flex flex-col lg:flex-row overflow-hidden w-full h-full">
-                    
-                    {/* PDF Pane */}
-                    <motion.div 
-                        initial={false}
-                        animate={{ 
-                            width: viewMode === 'pdf' ? '100%' : viewMode === 'video' ? '0%' : '50%',
-                            opacity: viewMode === 'video' ? 0 : 1,
-                            display: viewMode === 'video' ? 'none' : 'flex'
-                        }}
-                        className="h-full bg-white relative flex flex-col min-w-0"
-                    >
-                        <div className="flex-1 relative overflow-hidden">
-                             <iframe 
-                                key={`pdf-${pdfType}-${paperId}`}
-                                src={`${currentPdfUrl}#toolbar=0&navpanes=0`} 
-                                className="w-full h-full border-none"
-                                title="GCE Paper"
-                            />
-                            {/* Floating Overlay for Mobile Clarity */}
-                            <div className="absolute top-4 right-4 lg:hidden pointer-events-none">
-                                <div className="bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
-                                    <span className="text-[8px] font-black text-white uppercase tracking-widest">{pdfType === 'question' ? 'Question Paper' : 'Marking Scheme'}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-
-                    {/* Resizer Handle */}
-                    {viewMode === 'split' && window.innerWidth >= 1024 && (
-                        <div className="w-1 bg-slate-200" />
-                    )}
-
-                    {/* Video Pane */}
-                    {videoId && (
-                        <motion.div 
-                            initial={false}
-                            animate={{ 
-                                width: viewMode === 'video' ? '100%' : viewMode === 'pdf' ? '0%' : '50%',
-                                opacity: viewMode === 'pdf' ? 0 : 1,
-                                display: viewMode === 'pdf' ? 'none' : 'flex'
-                            }}
-                            className="h-full bg-slate-900 relative flex flex-col"
-                        >
-                            <div className="flex-1 flex flex-col items-center justify-center">
-                                <div className="w-full h-full">
-                                    <iframe
-                                        src={`https://www.youtube.com/embed/${videoId}?modestbranding=1&rel=0&autoplay=0`}
-                                        className="w-full h-full"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                        allowFullScreen
-                                    />
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-                </div>
-
-                {/* 💬 Discussion Sidebar */}
-                <AnimatePresence>
-                    {showSidebar && (
-                        <motion.aside 
-                            initial={{ x: 400 }}
-                            animate={{ x: 0 }}
-                            exit={{ x: 400 }}
-                            className="absolute right-0 top-0 bottom-0 w-full md:w-[380px] bg-white border-l border-slate-100 shadow-2xl z-[60] flex flex-col"
-                        >
-                            <div className="h-16 md:h-20 border-b border-slate-50 flex items-center justify-between px-6 shrink-0">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-                                        <MessageSquare className="w-4 h-4" />
-                                    </div>
-                                    <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Collaborative Feed</h3>
-                                </div>
-                                <button onClick={() => setShowSidebar(false)} className="p-2 hover:bg-slate-50 rounded-xl text-slate-400">
-                                    <X className="w-6 h-6" />
-                                </button>
-                            </div>
-
-                            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-slate-50/20">
-                                {comments.map((comment) => (
-                                    <div key={comment.id} className="flex flex-col gap-2">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-[10px] font-bold shadow-sm">
-                                                {comment.author_name?.charAt(0).toUpperCase()}
-                                            </div>
-                                            <span className="text-[9px] font-black text-slate-900 uppercase tracking-widest">{comment.author_name}</span>
-                                        </div>
-                                        <div className="p-4 bg-white border border-slate-100 rounded-2xl text-sm font-medium text-slate-600 leading-relaxed shadow-sm">
-                                            {comment.content}
-                                        </div>
-                                    </div>
-                                ))}
-                                <div ref={commentsEndRef} />
-                            </div>
-
-                            <div className="p-6 border-t border-slate-100 bg-white">
-                                <form onSubmit={handlePostComment} className="relative">
-                                    <textarea 
-                                        required
-                                        value={newComment}
-                                        onChange={(e) => setNewComment(e.target.value)}
-                                        placeholder="Ask a question..."
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 px-6 pr-14 text-sm font-medium focus:outline-none focus:border-primary transition-all resize-none min-h-[56px]"
-                                        rows={1}
-                                    />
-                                    <button 
-                                        type="submit"
-                                        disabled={isSubmitting || !newComment.trim()}
-                                        className="absolute right-2.5 bottom-2.5 w-10 h-10 bg-primary text-white rounded-xl shadow-lg flex items-center justify-center disabled:opacity-30"
-                                    >
-                                        <Send className="w-4 h-4" />
-                                    </button>
-                                </form>
-                            </div>
-                        </motion.aside>
-                    )}
-                </AnimatePresence>
-            </main>
-
-            {/* 📱 Mobile Navigation Bar - Fixed at the bottom of the fixed container */}
-            <nav className="lg:hidden h-20 bg-white border-t border-slate-100 flex items-center justify-around px-2 shrink-0 z-[70] shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
-                <MobileTab 
-                    active={viewMode === 'pdf'} 
-                    onClick={() => setViewMode('pdf')} 
-                    icon={<FileText className="w-5 h-5" />} 
-                    label="PAPER" 
-                />
-                {videoId && (
-                    <MobileTab 
-                        active={viewMode === 'video'} 
-                        onClick={() => setViewMode('video')} 
-                        icon={<Video className="w-6 h-6" />} 
-                        label="VIDEO SOLUTION" 
-                        highlight
-                    />
-                )}
-                <MobileTab 
-                    active={showSidebar} 
-                    onClick={() => setShowSidebar(!showSidebar)} 
-                    icon={<MessageSquare className="w-5 h-5" />} 
-                    label="DISCUSS" 
-                />
-            </nav>
-        </div>
+      <div className="fixed inset-0 flex flex-col items-center justify-center bg-white z-[9999]">
+        <div className="w-14 h-14 border-4 border-blue-50 border-t-primary rounded-full animate-spin" />
+        <p className="mt-4 text-[10px] font-black text-slate-400 uppercase tracking-widest animate-pulse">Loading Paper</p>
+      </div>
     );
-};
+  }
 
-// Internal Helper Components
-const ModeButton = ({ active, onClick, icon, label }: any) => (
-    <button 
-        onClick={onClick}
-        className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-            active ? 'bg-white text-primary shadow-sm ring-1 ring-black/5' : 'text-slate-400 hover:text-slate-600'
-        }`}
-    >
-        {icon}
-        <span>{label}</span>
-    </button>
-);
+  if (!paper) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center text-slate-400 font-bold uppercase tracking-widest bg-slate-50 z-[9999]">
+        Paper not found
+      </div>
+    );
+  }
 
-const PdfTypeButton = ({ active, onClick, label }: any) => (
-    <button 
-        onClick={onClick}
-        className={`w-9 h-9 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-            active ? 'bg-primary text-white shadow-lg' : 'bg-white text-slate-400 hover:text-primary'
-        }`}
-    >
-        {label}
-    </button>
-);
+  const currentPdfUrl = getPdfUrl();
+  const videoId = getVideoId();
 
-const MobileTab = ({ active, onClick, icon, label, highlight }: any) => (
-    <button 
-        onClick={onClick}
-        className={`flex flex-col items-center gap-1.5 px-4 transition-all ${
-            active ? 'text-primary' : highlight ? 'text-blue-400' : 'text-slate-300'
-        }`}
-    >
-        <div className={`p-2 rounded-2xl transition-all ${active ? 'bg-primary/10' : highlight ? 'bg-blue-50' : ''}`}>
-            {icon}
+  return (
+    <div className="fixed inset-0 flex flex-col bg-white z-[9999] overflow-hidden">
+      {/* ── Top Header ────────────────────────────────────────── */}
+      <header className="h-14 bg-white border-b border-slate-100 flex items-center px-4 shrink-0 shadow-sm relative z-50">
+        <button
+          onClick={() => navigate(-1)}
+          className="p-2 hover:bg-slate-50 rounded-full text-slate-500 transition-all mr-3"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <div className="min-w-0">
+          <h1 className="text-sm font-bold text-slate-800 truncate leading-tight">
+            {paper.year} · {paper.paper_type}
+          </h1>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            {paper.subject_name}
+          </p>
         </div>
-        <span className={`text-[7px] font-black uppercase tracking-[0.1em] ${active ? 'opacity-100' : 'opacity-70'}`}>{label}</span>
-    </button>
-);
+      </header>
+
+      {/* ── Main Content Area ─────────────────────────────────── */}
+      <main className="flex-1 flex flex-col overflow-hidden relative">
+        {/* Video Player Section */}
+        {videoId ? (
+          <div className="bg-black shrink-0 relative" style={{ aspectRatio: '16/9', maxHeight: '40vh' }}>
+            <iframe
+              src={`https://www.youtube.com/embed/${videoId}?modestbranding=1&rel=0`}
+              className="absolute inset-0 w-full h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title="Solution Video"
+            />
+          </div>
+        ) : (
+          <div className="h-12 bg-slate-50 shrink-0 flex items-center justify-center gap-3 border-b border-slate-100">
+            <Play className="w-4 h-4 text-slate-300" />
+            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">No Video solution available</span>
+          </div>
+        )}
+
+        {/* Primary Tabs */}
+        <div className="flex items-center bg-white border-b border-slate-100 shrink-0">
+          <button
+            onClick={() => setActiveTab('paper')}
+            className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-[11px] font-black uppercase tracking-widest relative transition-all ${
+              activeTab === 'paper' ? 'text-primary' : 'text-slate-400'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            Paper
+            {activeTab === 'paper' && <motion.div layoutId="paperTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
+          </button>
+          <button
+            onClick={() => setActiveTab('discussion')}
+            className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-[11px] font-black uppercase tracking-widest relative transition-all ${
+              activeTab === 'discussion' ? 'text-primary' : 'text-slate-400'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            Discussion
+            {comments.length > 0 && (
+              <span className="bg-primary text-white text-[9px] font-black px-1.5 py-0.5 rounded-full ml-1">
+                {comments.length}
+              </span>
+            )}
+            {activeTab === 'discussion' && <motion.div layoutId="paperTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
+          </button>
+        </div>
+
+        {/* Viewport Content */}
+        <div className="flex-1 relative overflow-hidden bg-slate-50">
+          <AnimatePresence mode="wait">
+            {activeTab === 'paper' ? (
+              <motion.div
+                key="paper-tab"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="absolute inset-0 flex flex-col"
+              >
+                {/* Sub-selector for Question/Answer (Moved here) */}
+                <div className="px-4 py-3 bg-white border-b border-slate-100 flex items-center justify-center gap-3 shrink-0">
+                   <button 
+                     onClick={() => setPdfType('question')}
+                     className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
+                       pdfType === 'question' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                     }`}
+                   >
+                     Question Paper
+                   </button>
+                   <button 
+                     onClick={() => setPdfType('answer')}
+                     className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
+                       pdfType === 'answer' ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                     }`}
+                   >
+                     Answer Key
+                   </button>
+                </div>
+                <div className="flex-1 bg-slate-200 relative">
+                  {currentPdfUrl ? (
+                    <iframe
+                      key={`pdf-view-${pdfType}`}
+                      src={`${currentPdfUrl}#toolbar=0&navpanes=0`}
+                      className="w-full h-full"
+                      title="PDF Viewer"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-8 text-center">
+                      <FileText className="w-12 h-12 mb-4 opacity-20" />
+                      <p className="text-xs font-bold uppercase tracking-widest">Document not available</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="discussion-tab"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                className="absolute inset-0 flex flex-col bg-slate-50"
+                style={{ paddingBottom: inputBottom }}
+              >
+                {/* Chat Container */}
+                <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+                  <div className="flex justify-center mb-8">
+                    <div className="bg-white px-4 py-1.5 rounded-full shadow-sm border border-slate-100">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Live Discussion Hub</p>
+                    </div>
+                  </div>
+
+                  {comments.map((comment, idx) => {
+                    const isMe = comment.author_name === user?.full_name;
+                    const showName = idx === 0 || comments[idx - 1].author_name !== comment.author_name;
+                    
+                    return (
+                      <div key={comment.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                        {showName && !isMe && (
+                          <div className="flex items-center gap-2 mb-1.5 ml-2">
+                             <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest">{comment.author_name}</span>
+                             {comment.author_role !== 'student' && (
+                               <span className={`text-[7px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest ${
+                                 comment.author_role === 'admin' ? 'bg-rose-500 text-white' : 'bg-primary text-white'
+                               }`}>
+                                 {comment.author_role}
+                               </span>
+                             )}
+                          </div>
+                        )}
+                        
+                        <div className={`group relative max-w-[85%] px-4 py-3 rounded-2xl shadow-sm border transition-all ${
+                          isMe 
+                          ? 'bg-primary text-white border-primary-dark rounded-tr-none' 
+                          : 'bg-white text-slate-700 border-slate-100 rounded-tl-none hover:border-primary/30'
+                        }`}>
+                          {comment.parent_content && (
+                            <div className={`mb-2 p-2 rounded-lg border-l-4 ${isMe ? 'bg-black/10 border-white/30' : 'bg-slate-50 border-primary/30'} flex flex-col`}>
+                                <span className={`text-[9px] font-black mb-1 ${isMe ? 'text-white/70' : 'text-primary'}`}>
+                                  {comment.parent_author}
+                                </span>
+                                <p className={`text-[10px] italic line-clamp-2 leading-relaxed ${isMe ? 'text-white/80' : 'text-slate-500'}`}>
+                                    "{comment.parent_content}"
+                                </p>
+                            </div>
+                          )}
+                          <div className="flex flex-col gap-1">
+                            <p className="text-sm font-medium leading-relaxed break-words">
+                              {comment.content}
+                            </p>
+                            <div className="flex items-center justify-end gap-2 mt-1 opacity-50">
+                               <span className="text-[8px] font-bold uppercase">
+                                 {new Date(comment.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                               </span>
+                            </div>
+                          </div>
+
+                          {/* Quick Action Overlay (Always visible on mobile, hover on desktop) */}
+                          <div className={`absolute top-0 ${isMe ? '-left-10' : '-right-10'} bottom-0 w-10 flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity`}>
+                             <button 
+                                onClick={() => {
+                                  setReplyTo(comment);
+                                  textareaRef.current?.focus();
+                                }}
+                                className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors active:scale-95"
+                             >
+                               <ReplyIcon className="w-3.5 h-3.5" />
+                             </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div ref={commentsEndRef} className="h-4" />
+                </div>
+
+                {/* Modern Input Bar */}
+                <div className="p-4 bg-white shrink-0 border-t border-slate-100">
+                  <AnimatePresence>
+                    {replyTo && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="mb-3 p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-start gap-3 relative overflow-hidden"
+                      >
+                        <div className="w-1 h-full absolute left-0 top-0 bg-primary" />
+                        <div className="flex-1">
+                          <p className="text-[9px] font-black text-primary uppercase mb-0.5">{replyTo.author_name}</p>
+                          <p className="text-xs text-slate-500 line-clamp-1 italic">{replyTo.content}</p>
+                        </div>
+                        <button onClick={() => setReplyTo(null)} className="p-1 hover:bg-white rounded-lg">
+                          <X className="w-4 h-4 text-slate-400" />
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  
+                  <form onSubmit={handlePostComment} className="flex items-center gap-3">
+                    <div className="flex-1 relative">
+                      <textarea
+                        ref={textareaRef}
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handlePostComment(e);
+                          }
+                        }}
+                        placeholder="Join the discussion..."
+                        rows={1}
+                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-3.5 px-5 text-sm font-medium focus:outline-none focus:border-primary transition-all resize-none max-h-32 scrollbar-none"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting || !newComment.trim()}
+                      className="w-12 h-12 bg-primary text-white rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-30"
+                    >
+                      <Send className="w-5 h-5 ml-0.5" />
+                    </button>
+                  </form>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </main>
+    </div>
+  );
+};
 
 export default PaperPage;

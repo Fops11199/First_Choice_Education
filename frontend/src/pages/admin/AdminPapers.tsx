@@ -21,6 +21,8 @@ const AdminPapers = () => {
   
   // Unified content state
   const [contentForm, setContentForm] = useState({
+    year: new Date().getFullYear(),
+    paper_type: 'Paper 1',
     youtube_id: '',
     question_url: '',
     answer_url: ''
@@ -76,6 +78,8 @@ const AdminPapers = () => {
     const answerUrl = paper.pdfs?.find((p: any) => p.pdf_type === 'answer')?.file_url || '';
     
     setContentForm({
+      year: paper.year,
+      paper_type: paper.paper_type,
       youtube_id: youtubeId,
       question_url: questionUrl,
       answer_url: answerUrl
@@ -90,6 +94,13 @@ const AdminPapers = () => {
     try {
       const promises = [];
       
+      // Update Paper Details (Year/Type)
+      promises.push(api.put(`/admin/papers/${selectedPaper.id}`, {
+        year: contentForm.year,
+        paper_type: contentForm.paper_type,
+        subject_id: subjectId
+      }));
+
       // Update Video if provided
       if (contentForm.youtube_id) {
         promises.push(api.post(`/admin/papers/${selectedPaper.id}/videos`, { 
@@ -378,6 +389,27 @@ const AdminPapers = () => {
                 <button onClick={() => setIsContentModalOpen(false)} className="p-3 hover:bg-slate-50 rounded-xl transition-all text-slate-400 hover:text-slate-800">
                   <X className="w-5 h-5" />
                 </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-1">Examination Year</label>
+                  <input 
+                    type="number" value={contentForm.year} onChange={(e) => setContentForm({ ...contentForm, year: parseInt(e.target.value) })}
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all font-semibold text-slate-700"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-1">Paper Type</label>
+                  <select 
+                    value={contentForm.paper_type} onChange={(e) => setContentForm({ ...contentForm, paper_type: e.target.value })}
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:border-primary font-semibold text-slate-700 appearance-none"
+                  >
+                    <option value="Paper 1">Paper 1 (MCQs)</option>
+                    <option value="Paper 2">Paper 2 (Structured)</option>
+                    <option value="Paper 3">Paper 3 (Practicals)</option>
+                  </select>
+                </div>
               </div>
 
               <form onSubmit={handleSaveMaterials} className="space-y-8">

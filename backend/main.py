@@ -35,11 +35,24 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         response = await call_next(request)
-        response.headers["X-Frame-Options"] = "DENY"
+        # Change DENY to SAMEORIGIN to allow same-domain iframes
+        # Note: If frontend/backend are on different ports, SAMEORIGIN might still block it in some browsers.
+        # But we'll also update CSP to be explicit.
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-        response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' https://accounts.google.com; frame-src 'self' https://www.youtube.com https://accounts.google.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;"
+        
+        # Update CSP to allow 'self' and the explicit backend origins for frames
+        csp = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://accounts.google.com; "
+            "frame-src 'self' https://www.youtube.com https://accounts.google.com http://localhost:8080 http://31.220.79.169:8080; "
+            "img-src 'self' data: https:; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com;"
+        )
+        response.headers["Content-Security-Policy"] = csp
         return response
 
 app.add_middleware(SecurityHeadersMiddleware)

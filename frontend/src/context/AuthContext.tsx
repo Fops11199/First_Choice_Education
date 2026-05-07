@@ -1,13 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { toast } from 'sonner';
 import api from '../api/api';
 
 interface AuthContextType {
   user: any;
   loading: boolean;
   error: string | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (full_name: string, email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<any>;
+  register: (full_name: string, email: string, password: string, whatsapp_number?: string, level?: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (data: any) => void;
   clearError: () => void;
@@ -71,24 +70,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('token', access_token);
       setUser(userData);
       setIsAuthenticated(true);
-      return true;
+      return userData; // Return the user object
     } catch (err: any) {
       const message = formatError(err);
       setError(message);
-      return false;
+      return null; // Return null on failure
     } finally {
       setLoading(false);
     }
   };
 
-  const register = async (full_name: string, email: string, password: string) => {
+  const register = async (full_name: string, email: string, password: string, whatsapp_number?: string, level?: string) => {
     setLoading(true);
     setError(null);
     try {
       const response = await api.post('/auth/register', {
         full_name,
         email: email.trim().toLowerCase(),
-        password
+        password,
+        ...(whatsapp_number ? { whatsapp_number } : {}),
+        ...(level ? { level } : {}),
       });
       const { access_token, user: newUserData } = response.data;
       localStorage.setItem('token', access_token);
@@ -105,10 +106,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    localStorage.clear(); // Clear everything to be safe
     setUser(null);
     setIsAuthenticated(false);
-    toast.info("Logged Out", { description: "You have been safely signed out." });
+    
+    // Use window.location to force a full state reset and clean redirect
+    window.location.href = '/login';
   };
 
   const updateUser = (data: any) => setUser(data);

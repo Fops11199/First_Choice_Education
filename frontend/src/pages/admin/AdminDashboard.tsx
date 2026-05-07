@@ -66,13 +66,13 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-12">
+    <div className="space-y-8 main-container pb-12">
       {/* Hero Banner - Using Tints, no deep shades */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="relative bg-gradient-to-br from-blue-500 via-primary to-blue-400 overflow-hidden rounded-[2.5rem] p-8 sm:p-12 text-white shadow-2xl shadow-primary/10"
+        className="relative bg-gradient-to-br from-blue-500 via-primary to-blue-400 overflow-hidden rounded-2xl p-8 sm:p-12 text-white shadow-2xl shadow-primary/10"
       >
         <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-white/10 rounded-full blur-[100px]"></div>
         <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-72 h-72 bg-white/10 rounded-full blur-[80px]"></div>
@@ -80,7 +80,7 @@ const AdminDashboard = () => {
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30">
             <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
-            <span className="text-[10px] font-bold tracking-[0.2em] text-white uppercase">Administrator Portal</span>
+            <span className="text-[10px] font-bold tracking-[0.2em] text-white uppercase">Admin Portal</span>
           </div>
           <h1 className="text-4xl sm:text-5xl font-bold mb-6 leading-[1.2]">
             Platform <br />
@@ -90,7 +90,7 @@ const AdminDashboard = () => {
             Seamlessly oversee your educational ecosystem. Track performance, manage resources, and scale your impact from one central command center.
           </p>
           <div className="flex flex-wrap gap-4">
-            <Link to="/admin_dashboard/subjects" className="inline-flex items-center gap-3 bg-white text-primary px-8 py-4 rounded-2xl font-semibold hover:bg-blue-50 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-black/5">
+            <Link to="/admin_dashboard/subjects" className="inline-flex items-center gap-3 bg-white text-primary px-8 py-4 rounded-xl font-semibold hover:bg-blue-50 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-black/5">
               <Plus className="w-5 h-5" /> Add New Content
             </Link>
           </div>
@@ -124,7 +124,7 @@ const AdminDashboard = () => {
             </Link>
           </div>
           
-          <div className="bg-white rounded-[2rem] border border-blue-50 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl border border-blue-50 shadow-sm overflow-hidden">
             <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-blue-50">
               {recentSubjects.length > 0 ? (
                 <table className="w-full text-left text-sm border-collapse">
@@ -174,7 +174,7 @@ const AdminDashboard = () => {
             <p className="text-sm font-medium text-slate-400">Live system status and metrics</p>
           </div>
           
-          <div className="bg-white rounded-[2rem] border border-blue-50 shadow-xl shadow-blue-100/20 p-8 space-y-10 relative overflow-hidden group">
+          <div className="bg-white rounded-2xl border border-blue-50 shadow-xl shadow-blue-100/20 p-8 space-y-10 relative overflow-hidden group">
             {/* Background Decoration */}
             <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors"></div>
             
@@ -272,7 +272,7 @@ const StatCard = ({ title, value, icon, color, trend }: any) => (
     whileInView={{ opacity: 1, scale: 1 }}
     viewport={{ once: true }}
     whileHover={{ y: -6, scale: 1.02 }}
-    className="relative group bg-white rounded-[2rem] border border-blue-50 p-8 shadow-sm hover:shadow-xl hover:shadow-blue-200/30 transition-all duration-300"
+    className="relative group bg-white rounded-2xl border border-blue-50 p-8 shadow-sm hover:shadow-xl hover:shadow-blue-200/30 transition-all duration-300"
   >
     <div className="flex items-center justify-between mb-8">
       <div className={`bg-gradient-to-br ${color} w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:rotate-6 transition-transform duration-500`}>

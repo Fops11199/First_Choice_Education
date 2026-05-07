@@ -73,7 +73,7 @@ const SubjectPapersPage = () => {
   }
 
   return (
-    <div className="pt-24 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="pt-24 pb-16 main-container">
       <div className="mb-12">
         <Link to="/subjects" className="inline-flex items-center gap-2 text-primary font-bold text-sm mb-6 hover:underline">
           <ChevronLeft className="w-4 h-4" /> Back to Subjects
@@ -84,10 +84,10 @@ const SubjectPapersPage = () => {
           </div>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="w-4 h-1 bg-accent"></span>
-              <span className="text-[10px] font-bold tracking-widest text-primary uppercase">{data.level}</span>
+              <span className="w-4 h-1 bg-primary rounded-full"></span>
+              <span className="text-[10px] font-black tracking-widest text-primary uppercase">{data.level}</span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-deep-brown">{data.subject_name}</h1>
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-black text-slate-900">{data.subject_name}</h1>
           </div>
         </div>
         <p className="text-slate-500 max-w-2xl font-medium">
@@ -103,18 +103,19 @@ const SubjectPapersPage = () => {
             <p className="text-sm text-slate-500">We are currently uploading content for this subject. Check back soon!</p>
           </div>
         ) : !isEnrolled ? (
-          <div className="col-span-full py-16 px-6 text-center bg-slate-50 rounded-3xl border border-slate-200 shadow-inner max-w-2xl mx-auto">
-            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-slate-400 mx-auto mb-6 shadow-sm">
-              <BookOpen className="w-8 h-8" />
+          <div className="col-span-full py-16 px-6 text-center bg-white border border-slate-100 rounded-2xl shadow-[0_20px_50px_-20px_rgba(0,0,0,0.1)] max-w-2xl mx-auto relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-primary"></div>
+            <div className="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 mx-auto mb-6">
+              <BookOpen className="w-10 h-10" />
             </div>
-            <h3 className="text-2xl font-bold text-deep-brown mb-3">Enroll to Access Papers</h3>
-            <p className="text-slate-500 mb-8 max-w-md mx-auto">
+            <h3 className="text-2xl font-black text-slate-900 mb-3">Enroll to Access Papers</h3>
+            <p className="text-slate-500 mb-8 max-w-md mx-auto font-medium leading-relaxed">
               You need to enroll in {data.subject_name} to access its past papers, video solutions, and PDF materials. Enrollment is free!
             </p>
             <button 
               onClick={handleEnroll}
               disabled={enrolling}
-              className="btn-primary py-3 px-8 rounded-xl inline-flex items-center gap-2 text-lg font-bold shadow-lg shadow-primary/20"
+              className="w-full md:w-auto bg-slate-900 text-white py-4 px-10 rounded-lg inline-flex items-center justify-center gap-3 text-sm font-black uppercase tracking-widest shadow-xl shadow-slate-900/10 hover:bg-primary transition-all active:scale-95"
             >
               {enrolling ? <Loader2 className="w-5 h-5 animate-spin" /> : <BookOpen className="w-5 h-5" />}
               {enrolling ? 'Enrolling...' : 'Enroll Now for Free'}
@@ -131,21 +132,26 @@ const SubjectPapersPage = () => {
               <Link to={`/papers/${paper.id}`}>
                 <div className="pattern-card group p-6 flex items-center justify-between hover:border-primary/30 transition-all">
                   <div className="flex items-center gap-5">
-                    <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-all">
+                    <div className="w-12 h-12 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-all">
                       <FileText className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-deep-brown group-hover:text-primary transition-all">
+                      <h3 className="text-lg font-black text-slate-900 group-hover:text-primary transition-all">
                         {paper.year} - {paper.paper_type}
                       </h3>
                       <div className="flex items-center gap-3 mt-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                          {paper.video_count} Videos
-                        </span>
-                        <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                          {paper.pdf_count} PDFs
-                        </span>
+                        <div className="flex items-center gap-1">
+                           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                            {paper.video_count} Videos
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                           <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                            {paper.pdf_count} PDFs
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>

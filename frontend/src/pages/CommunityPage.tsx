@@ -62,7 +62,7 @@ const CommunityPage = () => {
   );
 
   return (
-    <div className="pt-24 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="pt-24 pb-16 main-container">
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row justify-between items-start gap-8 mb-12">
         <div className="max-w-xl">
@@ -76,7 +76,7 @@ const CommunityPage = () => {
         
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="btn-primary py-3 px-8 text-sm rounded-2xl whitespace-nowrap shadow-xl shadow-primary/20 flex items-center gap-2"
+          className="btn-primary py-3 px-8 text-sm rounded-xl whitespace-nowrap shadow-xl shadow-primary/20 flex items-center gap-2"
         >
           <Plus className="w-5 h-5" /> Create Community
         </button>
@@ -107,7 +107,7 @@ const CommunityPage = () => {
                   key={community.id}
                   whileHover={{ y: -4 }}
                   onClick={() => navigate(`/community/group/${community.id}`)}
-                  className="bg-white border border-slate-100 rounded-3xl cursor-pointer p-6 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden"
+                  className="bg-white border border-slate-100 rounded-2xl cursor-pointer p-6 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden"
                 >
                   <div className="absolute top-0 right-0 p-4">
                     {community.is_private ? (
@@ -145,7 +145,7 @@ const CommunityPage = () => {
               ))}
             </div>
           ) : (
-            <div className="bg-white border border-slate-200 border-dashed rounded-[2.5rem] p-16 text-center">
+            <div className="bg-white border border-slate-200 border-dashed rounded-2xl p-16 text-center">
               <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Shield className="w-10 h-10 text-slate-300" />
               </div>
@@ -163,7 +163,7 @@ const CommunityPage = () => {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          <div className="bg-slate-900 text-white rounded-[2rem] p-8 relative overflow-hidden shadow-2xl">
+          <div className="bg-slate-900 text-white rounded-2xl p-8 relative overflow-hidden shadow-2xl">
             <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-primary/20 rounded-full blur-3xl"></div>
             <div className="relative z-10">
               <Shield className="w-8 h-8 text-accent mb-6" />
@@ -191,7 +191,7 @@ const CommunityPage = () => {
             </div>
           </div>
 
-          <div className="bg-primary/5 border border-primary/10 rounded-[2rem] p-8">
+          <div className="bg-primary/5 border border-primary/10 rounded-2xl p-8">
             <h3 className="text-base font-black text-slate-900 mb-6 flex items-center gap-2 uppercase tracking-widest">
               <TrendingUp className="w-5 h-5 text-primary" />
               Top Categories
@@ -222,7 +222,7 @@ const CommunityPage = () => {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white rounded-[2.5rem] p-10 w-full max-w-xl shadow-2xl overflow-hidden"
+              className="relative bg-white rounded-2xl p-6 sm:p-10 w-full max-w-xl shadow-2xl overflow-hidden"
             >
               <div className="absolute top-0 right-0 p-6">
                 <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400">

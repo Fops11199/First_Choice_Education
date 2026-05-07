@@ -19,6 +19,7 @@ const AdminLayout = () => {
   const { user, logout, loading } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   // Authentication & Authorization check
   if (loading) {
@@ -100,15 +101,6 @@ const AdminLayout = () => {
           })}
         </div>
 
-        <div className="p-4 border-t border-slate-100">
-          <button 
-            onClick={logout}
-            className="flex items-center gap-3 w-full px-3 py-3 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-            Logout
-          </button>
-        </div>
       </aside>
 
       {/* Main Content */}
@@ -137,14 +129,58 @@ const AdminLayout = () => {
           <div className="flex items-center gap-4 sm:gap-6">
             <NotificationMenu />
             
-            <div className="flex items-center gap-3 pl-4 border-l border-slate-100">
-              <div className="hidden sm:block text-right">
-                <p className="text-sm font-bold text-slate-900 leading-none mb-1">{user?.full_name || 'Admin User'}</p>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">Super Admin</p>
-              </div>
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shadow-inner">
-                {user?.full_name?.charAt(0) || 'A'}
-              </div>
+            <div className="relative">
+              <button 
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center gap-3 pl-4 border-l border-slate-100 hover:opacity-80 transition-opacity"
+              >
+                <div className="hidden sm:block text-right">
+                  <p className="text-sm font-bold text-slate-900 leading-none mb-1">{user?.full_name || 'Admin User'}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">Super Admin</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black shadow-inner border border-primary/5">
+                  {user?.full_name?.charAt(0) || 'A'}
+                </div>
+              </button>
+
+              <AnimatePresence>
+                {showUserMenu && (
+                  <>
+                    <motion.div 
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      onClick={() => setShowUserMenu(false)}
+                      className="fixed inset-0 z-40"
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute right-0 mt-2 w-56 bg-white border border-slate-100 rounded-2xl shadow-2xl z-50 p-2 overflow-hidden"
+                    >
+                      <div className="px-4 py-3 border-b border-slate-50 mb-1">
+                        <p className="text-xs font-black text-slate-900 truncate">{user?.full_name}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Administrator</p>
+                      </div>
+                      <Link 
+                        to="/settings" 
+                        onClick={() => setShowUserMenu(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-primary transition-all"
+                      >
+                        <Settings className="w-4 h-4" /> Settings
+                      </Link>
+                      <button 
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          logout();
+                        }}
+                        className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-xs font-bold text-red-500 hover:bg-red-50 transition-all text-left"
+                      >
+                        <LogOut className="w-4 h-4" /> Logout
+                      </button>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </header>

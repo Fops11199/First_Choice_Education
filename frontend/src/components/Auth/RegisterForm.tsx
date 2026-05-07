@@ -2,153 +2,282 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
-import { BookOpen, User, Mail, Lock, ArrowRight, Globe, Loader2, AlertCircle, ShieldCheck } from 'lucide-react';
+import {
+  BookOpen, User, Mail, Lock, Eye, EyeOff,
+  Phone, GraduationCap, ArrowRight, Loader2, AlertCircle, CheckCircle2
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 const RegisterForm = () => {
   const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [level, setLevel] = useState<'O-Level' | 'A-Level'>('O-Level');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [formError, setFormError] = useState('');
+
   const { register, loading, error, clearError } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError('');
     clearError();
-    const success = await register(fullName, email, password);
+
+    if (password !== confirmPassword) {
+      setFormError('Passwords do not match.');
+      return;
+    }
+    if (password.length < 8) {
+      setFormError('Password must be at least 8 characters.');
+      return;
+    }
+
+    // Silently prepend +237 for Cameroon
+    const whatsappNumber = phone.trim() ? `+237${phone.trim().replace(/^(\+237|237)/, '')}` : undefined;
+
+    const success = await register(fullName, email, password, whatsappNumber, level);
     if (success) {
-      toast.success("Account Provisioned!", { description: "Welcome to First Choice. Let's get started!" });
-      navigate('/onboarding');
+      toast.success('Welcome to First Choice!', { description: "Your account is ready. Let's get started!" });
+      navigate('/dashboard');
     }
   };
 
+  const displayError = formError || error;
+
   return (
-    <div className="min-h-[90vh] flex items-center justify-center p-4">
-      {/* Background Decor */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/5 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-400/5 rounded-full blur-[100px]" />
+    <div className="min-h-screen flex">
+      {/* Left Branding Panel — desktop only */}
+      <div className="hidden lg:flex lg:w-[42%] bg-slate-900 flex-col justify-between p-12 relative overflow-hidden shrink-0">
+        {/* Background orbs */}
+        <div className="absolute -top-32 -left-32 w-96 h-96 bg-primary/20 rounded-full blur-[120px]" />
+        <div className="absolute -bottom-32 -right-16 w-80 h-80 bg-blue-400/10 rounded-full blur-[100px]" />
+
+        <div className="relative z-10">
+          <Link to="/" className="flex items-center gap-3 mb-16">
+            <div className="bg-primary p-2.5 rounded-lg">
+              <BookOpen className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-white text-xl font-black tracking-tight">First Choice</span>
+          </Link>
+
+          <h2 className="text-4xl font-black text-white leading-tight mb-4">
+            Your GCE success<br />starts right here.
+          </h2>
+          <p className="text-slate-400 font-medium leading-relaxed max-w-xs">
+            Join thousands of Cameroonian students preparing for O-Level and A-Level with expert video solutions.
+          </p>
+        </div>
+
+        {/* Feature pills */}
+        <div className="relative z-10 space-y-3">
+          {[
+            { icon: '🎥', text: '1,000+ Expert Video Solutions' },
+            { icon: '📚', text: 'Full GCE Paper Archive' },
+            { icon: '👥', text: 'Active Student Community' },
+          ].map((f) => (
+            <div key={f.text} className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg px-4 py-3">
+              <span className="text-lg">{f.icon}</span>
+              <span className="text-white/80 text-sm font-semibold">{f.text}</span>
+            </div>
+          ))}
+          <p className="text-center text-white/20 text-[10px] font-bold uppercase tracking-widest pt-4">
+            © {new Date().getFullYear()} First Choice Education
+          </p>
+        </div>
       </div>
 
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-lg relative z-10"
-      >
-        <div className="bg-white rounded-[3rem] shadow-2xl shadow-blue-100/50 p-8 md:p-12 border border-blue-50 overflow-hidden relative">
-          <div className="flex flex-col items-center mb-10 text-center">
-            <motion.div 
-              whileHover={{ scale: 1.05, rotate: -5 }}
-              className="bg-primary p-4 rounded-2xl shadow-xl shadow-primary/20 mb-4"
-            >
-              <BookOpen className="w-8 h-8 text-white" />
-            </motion.div>
-            <h2 className="text-3xl font-bold text-slate-800 tracking-tight">Create Identity</h2>
-            <p className="text-slate-400 font-medium text-sm mt-1 uppercase tracking-[0.2em]">Join the academic ecosystem</p>
+      {/* Right Form Panel */}
+      <div className="flex-1 flex flex-col justify-center items-center px-0 sm:px-6 py-12 bg-white overflow-y-auto">
+        {/* Mobile logo */}
+        <Link to="/" className="flex items-center gap-2.5 lg:hidden mb-8">
+          <div className="bg-primary p-2 rounded-lg">
+            <BookOpen className="w-5 h-5 text-white" />
+          </div>
+          <span className="text-slate-800 text-lg font-black">First Choice</span>
+        </Link>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="w-full max-w-md px-6 sm:px-0"
+        >
+          <div className="mb-8">
+            <h1 className="text-2xl font-black text-slate-900 mb-1">Create your account</h1>
+            <p className="text-sm text-slate-500 font-medium">
+              Already registered?{' '}
+              <Link to="/login" className="text-primary font-bold hover:underline">
+                Sign in
+              </Link>
+            </p>
           </div>
 
-          {error && (
-            <motion.div 
+          {displayError && (
+            <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
-              className="bg-red-50 border border-red-100 p-4 rounded-2xl mb-8 flex items-center gap-3 text-red-600"
+              className="bg-red-50 border border-red-100 p-3.5 rounded-lg mb-6 flex items-center gap-3 text-red-600"
             >
-              <AlertCircle className="w-5 h-5 shrink-0" />
-              <p className="text-xs font-semibold">{error}</p>
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <p className="text-xs font-semibold">{displayError}</p>
             </motion.div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-                  <User className="w-3 h-3" /> Legal Name
-                </label>
-                <input 
-                  type="text"
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="John Doe"
-                  className="w-full px-6 py-4 bg-blue-50/30 border border-blue-100 rounded-2xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-slate-700 font-medium placeholder:text-slate-300"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-                  <Mail className="w-3 h-3" /> Email Address
-                </label>
-                <input 
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
-                  className="w-full px-6 py-4 bg-blue-50/30 border border-blue-100 rounded-2xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-slate-700 font-medium placeholder:text-slate-300"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-                <Lock className="w-3 h-3" /> Security Key
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Full Name */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                <User className="w-3 h-3" /> Full Name
               </label>
-              <input 
-                type="password"
+              <input
+                type="text"
                 required
-                minLength={8}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-6 py-4 bg-blue-50/30 border border-blue-100 rounded-2xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-slate-700 font-medium placeholder:text-slate-300"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="e.g. Amara Brice"
+                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-slate-800 font-medium placeholder:text-slate-300 text-sm"
               />
-              <p className="text-[10px] font-medium text-slate-400 mt-2 ml-1 flex items-center gap-2">
-                <ShieldCheck className="w-3 h-3 text-green-400" /> Use at least 8 characters for safety
-              </p>
             </div>
 
-            <button 
-              type="submit" 
+            {/* Phone */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                <Phone className="w-3 h-3" /> WhatsApp Number
+              </label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">+237</span>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                  placeholder="6XX XXX XXX"
+                  maxLength={9}
+                  className="w-full pl-16 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-slate-800 font-medium placeholder:text-slate-300 text-sm"
+                />
+              </div>
+              <p className="text-[10px] text-slate-400 font-medium ml-0.5">Used to connect you to your class WhatsApp group</p>
+            </div>
+
+            {/* Email */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                <Mail className="w-3 h-3" /> Email Address
+              </label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-slate-800 font-medium placeholder:text-slate-300 text-sm"
+              />
+            </div>
+
+            {/* Password */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <Lock className="w-3 h-3" /> Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    minLength={8}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Min 8 chars"
+                    className="w-full px-4 py-3.5 pr-11 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-slate-800 font-medium placeholder:text-slate-300 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3 h-3" /> Confirm
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirm ? 'text' : 'password'}
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Repeat password"
+                    className={`w-full px-4 py-3.5 pr-11 bg-slate-50 border rounded-lg focus:outline-none focus:ring-4 focus:ring-primary/5 transition-all text-slate-800 font-medium placeholder:text-slate-300 text-sm ${
+                      confirmPassword && confirmPassword !== password ? 'border-red-300 focus:border-red-400' : 'border-slate-200 focus:border-primary'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* GCE Level */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                <GraduationCap className="w-3 h-3" /> GCE Level
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                {(['O-Level', 'A-Level'] as const).map((l) => (
+                  <button
+                    key={l}
+                    type="button"
+                    onClick={() => setLevel(l)}
+                    className={`py-3.5 rounded-lg text-sm font-bold transition-all border ${
+                      level === l
+                        ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
+                        : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-primary/40'
+                    }`}
+                  >
+                    {l === 'O-Level' ? 'Ordinary Level' : 'Advanced Level'}
+                    <span className="block text-[10px] font-semibold opacity-70 mt-0.5">{l}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
               disabled={loading}
-              className="w-full py-4 bg-primary text-white rounded-2xl font-semibold text-sm hover:bg-blue-500 transition-all active:scale-[0.98] shadow-xl shadow-primary/20 flex items-center justify-center gap-3 group disabled:opacity-70"
+              className="w-full py-4 bg-primary text-white rounded-lg font-bold text-sm hover:bg-primary-dark transition-all active:scale-[0.98] shadow-lg shadow-primary/20 flex items-center justify-center gap-2 group disabled:opacity-70 mt-2"
             >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
                 <>
-                  Signup
+                  Create Account & Start Learning
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
             </button>
           </form>
 
-          {/* Social Auth Divider */}
-          <div className="relative my-10">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-blue-50"></div>
-            </div>
-            <div className="relative flex justify-center text-[10px] font-bold uppercase tracking-widest text-slate-300">
-              <span className="bg-white px-4">Instant Provisioning</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <button className="flex items-center justify-center gap-2 py-3 bg-white border border-blue-100 rounded-xl hover:bg-blue-50 transition-all group">
-              <Globe className="w-4 h-4 text-slate-400 group-hover:text-primary transition-colors" />
-              <span className="text-xs font-semibold text-slate-500 group-hover:text-slate-700">Google</span>
-            </button>
-            <button className="flex items-center justify-center gap-2 py-3 bg-white border border-blue-100 rounded-xl hover:bg-blue-50 transition-all group">
-              <Mail className="w-4 h-4 text-slate-400 group-hover:text-primary transition-colors" />
-              <span className="text-xs font-semibold text-slate-500 group-hover:text-slate-700">Github</span>
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-8 text-center">
-          <p className="text-sm font-medium text-slate-400">
-            Already have an identity? <Link to="/login" className="text-primary font-bold hover:underline">Log in here</Link>
+          <p className="text-center text-xs text-slate-400 mt-6">
+            By signing up you agree to our{' '}
+            <Link to="/terms" className="text-primary hover:underline font-semibold">Terms</Link>{' '}
+            and{' '}
+            <Link to="/privacy" className="text-primary hover:underline font-semibold">Privacy Policy</Link>.
           </p>
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
     </div>
   );
 };

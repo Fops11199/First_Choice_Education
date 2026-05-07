@@ -64,7 +64,7 @@ const SubjectsPage = () => {
   });
 
   return (
-    <div className="pt-24 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="pt-24 pb-16 main-container">
       <SEO 
         title={`${selectedLevel} Subjects`}
         description={`Explore our comprehensive archive of ${selectedLevel} GCE subjects with expert video solutions and past papers.`}
@@ -72,11 +72,11 @@ const SubjectsPage = () => {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
         <div className="max-w-xl">
           <div className="flex items-center gap-2 mb-3">
-            <span className="w-6 h-1 bg-accent"></span>
-            <span className="text-[10px] font-bold tracking-widest text-primary uppercase">Subject Archive</span>
+            <span className="w-6 h-1 bg-primary rounded-full"></span>
+            <span className="text-[10px] font-black tracking-widest text-primary uppercase">Subject Archive</span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-deep-brown mb-4">Your {selectedLevel} Subjects.</h1>
-          <p className="text-base text-slate-600">Browse the complete archive of subjects for the selected GCE level.</p>
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-black text-slate-900 mb-4">Your {selectedLevel} Subjects.</h1>
+          <p className="text-sm md:text-base text-slate-600 font-medium leading-relaxed">Browse the complete archive of subjects for the selected GCE level.</p>
           
           {/* Level Toggle for Admins or users without a set level */}
           {(!user?.level || user.role === 'admin') && (
@@ -104,7 +104,7 @@ const SubjectsPage = () => {
             placeholder="Search subjects..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:border-primary focus:outline-none font-semibold text-sm transition-all shadow-sm"
+            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:border-primary focus:ring-4 focus:ring-primary/5 focus:outline-none font-bold text-sm transition-all shadow-sm placeholder:text-slate-400"
           />
         </div>
       </div>
@@ -145,11 +145,11 @@ const SubjectsPage = () => {
                     )}
                   </div>
                   
-                  <h3 className="text-lg font-bold text-deep-brown mb-1">{sub.name}</h3>
-                  <p className="text-slate-500 font-semibold text-xs mb-4">{sub.papers?.length || 0} Solved Papers</p>
+                  <h3 className="text-lg font-black text-slate-900 mb-1 group-hover:text-primary transition-colors">{sub.name}</h3>
+                  <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest mb-6">{sub.papers?.length || 0} Solved Papers</p>
                   
-                  <div className="mt-auto flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-widest group-hover:gap-3 transition-all">
+                  <div className="mt-auto flex flex-col gap-4">
+                    <div className="flex items-center gap-2 text-primary font-black text-[9px] uppercase tracking-widest group-hover:gap-3 transition-all">
                       View Papers <ArrowRight className="w-4 h-4" />
                     </div>
                     
@@ -157,9 +157,9 @@ const SubjectsPage = () => {
                       <button 
                         onClick={(e) => handleEnroll(e, sub.id)}
                         disabled={enrollingId === sub.id}
-                        className="btn-primary py-1.5 px-4 text-xs rounded-lg inline-flex items-center gap-2"
+                        className="w-full bg-slate-900 text-white py-3 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-primary transition-all shadow-lg shadow-slate-900/10"
                       >
-                        {enrollingId === sub.id && <Loader2 className="w-3 h-3 animate-spin" />}
+                        {enrollingId === sub.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Book className="w-3.5 h-3.5" />}
                         Enroll Now
                       </button>
                     )}

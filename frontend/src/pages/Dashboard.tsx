@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-import { FileText, CheckCircle, Star, ArrowRight, BookOpen, Trophy, Flame, Loader2 } from 'lucide-react';
+import { FileText, CheckCircle, Star, ArrowRight, BookOpen, Trophy, Flame, Loader2, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import api from '../api/api';
 
@@ -27,6 +27,7 @@ const Dashboard = () => {
         const [statsRes, enrollmentsRes] = await Promise.all([
           api.get('/students/me/dashboard'),
           api.get('/students/me/enrollments'),
+          api.post('/students/me/streak/ping'),
         ]);
         setDashboardStats(statsRes.data);
         setEnrollments(enrollmentsRes.data);
@@ -55,6 +56,20 @@ const Dashboard = () => {
     }
   };
 
+  const handleUnenroll = async (subjectId: string) => {
+    if (!window.confirm('Are you sure you want to unenroll from this subject?')) return;
+    try {
+      await api.delete(`/students/me/enrollments/${subjectId}`);
+      setEnrollments(prev => prev.filter(e => e.subject_id !== subjectId));
+      // Refresh stats
+      const statsRes = await api.get('/students/me/dashboard');
+      setDashboardStats(statsRes.data);
+    } catch (err) {
+      console.error('Failed to unenroll', err);
+      alert('Failed to unenroll. Please try again.');
+    }
+  };
+
   if (user?.role === 'admin') {
     return <Navigate to="/admin_dashboard" replace />;
   }
@@ -72,35 +87,35 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="w-full">
+    <div className="main-container">
       {/* Welcome Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <span className="w-6 h-1 bg-accent"></span>
-            <span className="text-[10px] font-bold tracking-widest text-primary uppercase">Student Portal</span>
+            <span className="w-6 h-1 bg-primary rounded-full"></span>
+            <span className="text-[10px] font-black tracking-widest text-primary uppercase">Student Portal</span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-deep-brown mb-2">Welcome back, {user?.full_name?.split(' ')[0] || 'Scholar'}.</h1>
-          <p className="text-slate-500 font-medium text-sm">Continuing GCE {user?.level || 'A-Level'} Preparation</p>
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-black text-slate-900 mb-2">Welcome back, {user?.full_name?.split(' ')[0] || 'Scholar'}.</h1>
+          <p className="text-slate-500 font-bold text-xs md:text-sm">Continuing GCE {user?.level || 'A-Level'} Preparation</p>
         </div>
         
-        <div className="flex gap-4">
-          <div className="bg-white border border-slate-100 rounded-xl px-6 py-3 flex items-center gap-4 shadow-sm">
-            <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center text-orange-500">
-              <Flame className="w-5 h-5" />
+        <div className="flex flex-wrap gap-4">
+          <div className="bg-white border border-slate-100 rounded-xl px-5 py-4 flex items-center gap-4 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] hover:scale-[1.02] transition-transform">
+            <div className="w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500">
+              <Flame className="w-6 h-6 fill-orange-500/20" />
             </div>
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Day Streak</p>
-              <p className="text-xl font-bold text-deep-brown">{dashboardStats?.current_streak ?? 0} days</p>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Study Streak</p>
+              <p className="text-xl font-black text-slate-900">{dashboardStats?.current_streak ?? 0} <span className="text-xs font-bold text-slate-400">days</span></p>
             </div>
           </div>
-          <div className="bg-white border border-slate-100 rounded-xl px-6 py-3 flex items-center gap-4 shadow-sm">
-            <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center text-green-500">
-              <CheckCircle className="w-5 h-5" />
+          <div className="bg-white border border-slate-100 rounded-xl px-5 py-4 flex items-center gap-4 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] hover:scale-[1.02] transition-transform">
+            <div className="w-12 h-12 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+              <CheckCircle className="w-6 h-6 fill-emerald-500/20" />
             </div>
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Completed</p>
-              <p className="text-xl font-bold text-deep-brown">{dashboardStats?.papers_completed ?? 0} papers</p>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Completed</p>
+              <p className="text-xl font-black text-slate-900">{dashboardStats?.papers_completed ?? 0} <span className="text-xs font-bold text-slate-400">papers</span></p>
             </div>
           </div>
         </div>
@@ -116,8 +131,8 @@ const Dashboard = () => {
               <BookOpen className="w-5 h-5 text-primary" />
               My Enrolled Subjects
             </h2>
-            <Link to="/subjects" className="text-primary font-bold text-sm hover:underline">
-              Browse All
+            <Link to="/subjects" className="text-primary font-black text-xs uppercase tracking-widest hover:underline flex items-center gap-2">
+              Explore Subjects <ChevronRight className="w-3 h-3" />
             </Link>
           </div>
           
@@ -126,25 +141,37 @@ const Dashboard = () => {
               enrollments.map((enrollment) => (
                 <motion.div
                   key={enrollment.enrollment_id}
-                  whileHover={{ y: -2 }}
-                  className="bg-white border border-slate-100 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-primary/20 transition-all shadow-sm"
+                  whileHover={{ y: -4 }}
+                  className="bg-white border border-slate-100 rounded-xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 hover:border-primary/30 transition-all shadow-[0_8px_30px_-10px_rgba(0,0,0,0.03)] relative overflow-hidden group"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="bg-primary/5 p-3 rounded-lg">
-                      <BookOpen className="w-6 h-6 text-primary" />
+                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary transform -translate-x-full group-hover:translate-x-0 transition-transform"></div>
+                  <div className="flex items-center gap-5">
+                    <div className="w-14 h-14 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+                      <BookOpen className="w-7 h-7" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-deep-brown mb-1">{enrollment.subject_name}</h3>
-                      <p className="text-xs font-bold text-slate-400">Enrolled since {new Date(enrollment.enrolled_at).toLocaleDateString()}</p>
+                      <h3 className="text-lg font-black text-slate-900 mb-1 group-hover:text-primary transition-colors">{enrollment.subject_name}</h3>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Enrollment</p>
+                      </div>
                     </div>
                   </div>
-                  <Link to={`/subjects/${enrollment.subject_id}/papers`} className="btn-primary py-2 px-6 text-sm inline-flex items-center gap-2">
-                    View Papers <ArrowRight className="w-4 h-4" />
-                  </Link>
+                  <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                    <Link to={`/subjects/${enrollment.subject_id}/papers`} className="w-full sm:w-auto bg-primary text-white py-3.5 px-8 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-primary-dark transition-all shadow-lg shadow-primary/10">
+                      Go to Class <ArrowRight className="w-4 h-4" />
+                    </Link>
+                    <button 
+                      onClick={() => handleUnenroll(enrollment.subject_id)}
+                      className="text-[9px] font-bold text-slate-300 hover:text-rose-500 transition-colors uppercase tracking-[0.2em] py-2"
+                    >
+                      Unenroll from Subject
+                    </button>
+                  </div>
                 </motion.div>
               ))
             ) : (
-              <div className="bg-white border border-slate-100 border-dashed rounded-2xl p-12 text-center">
+              <div className="bg-white border border-slate-100 border-dashed rounded-xl p-12 text-center">
                 <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
                   <FileText className="w-8 h-8 text-slate-300" />
                 </div>
@@ -157,45 +184,41 @@ const Dashboard = () => {
         </div>
 
         {/* Right Column: Stats */}
-        <div className="space-y-6">
-          <h2 className="text-xl font-bold text-deep-brown">Your Progress</h2>
+        <div className="space-y-8">
+          <h2 className="text-xl font-black text-slate-900 flex items-center gap-3">
+            <Trophy className="w-5 h-5 text-accent" />
+            Learning Stats
+          </h2>
           
-          <div className="bg-deep-brown text-white rounded-2xl p-6 space-y-5 shadow-md">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold text-white/60 uppercase tracking-widest">Summary</p>
+          <div className="bg-gradient-to-br from-primary to-primary-dark text-white rounded-xl p-8 space-y-6 shadow-xl shadow-primary/10 border border-white/10 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-10">
+               <Trophy className="w-32 h-32 text-accent" />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white/10 rounded-xl p-4 text-center">
-                <p className="text-2xl font-black">{dashboardStats?.enrolled_subjects ?? 0}</p>
-                <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest mt-1">Subjects</p>
+            <div className="flex items-center justify-between relative z-10">
+              <p className="text-[10px] font-black text-white/50 uppercase tracking-[0.2em]">Live Summary</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4 relative z-10">
+              <div className="bg-white/5 border border-white/10 rounded-xl p-5 text-center backdrop-blur-sm">
+                <p className="text-2xl font-black text-white">{dashboardStats?.enrolled_subjects ?? 0}</p>
+                <p className="text-[9px] font-black text-white/40 uppercase tracking-widest mt-1">Subjects</p>
               </div>
-              <div className="bg-white/10 rounded-xl p-4 text-center">
-                <p className="text-2xl font-black">{dashboardStats?.papers_completed ?? 0}</p>
-                <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest mt-1">Solved</p>
+              <div className="bg-white/5 border border-white/10 rounded-xl p-5 text-center backdrop-blur-sm">
+                <p className="text-2xl font-black text-white">{dashboardStats?.papers_completed ?? 0}</p>
+                <p className="text-[9px] font-black text-white/40 uppercase tracking-widest mt-1">Solved</p>
               </div>
-              <div className="bg-white/10 rounded-xl p-4 text-center">
-                <p className="text-2xl font-black">{dashboardStats?.current_streak ?? 0}</p>
-                <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest mt-1">Streak</p>
+              <div className="bg-white/5 border border-white/10 rounded-xl p-5 text-center backdrop-blur-sm">
+                <p className="text-2xl font-black text-accent">{dashboardStats?.current_streak ?? 0}</p>
+                <p className="text-[9px] font-black text-white/40 uppercase tracking-widest mt-1">Streak</p>
               </div>
-              <div className="bg-white/10 rounded-xl p-4 text-center">
-                <p className="text-2xl font-black">{dashboardStats?.badges_earned ?? 0}</p>
-                <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest mt-1">Badges</p>
+              <div className="bg-white/5 border border-white/10 rounded-xl p-5 text-center backdrop-blur-sm">
+                <p className="text-2xl font-black text-white">{dashboardStats?.badges_earned ?? 0}</p>
+                <p className="text-[9px] font-black text-white/40 uppercase tracking-widest mt-1">Badges</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-primary/5 border border-primary/10 rounded-2xl p-6">
-            <h3 className="text-base font-bold text-deep-brown mb-3 flex items-center gap-2">
-              <Star className="w-4 h-4 text-accent fill-accent" />
-              Community Tips
-            </h3>
-            <p className="text-sm text-slate-600 leading-relaxed font-medium mb-4">
-              "Focus on Biology Paper 2 from 2018. It covers 40% of the core topics for this year's session."
-            </p>
-            <button className="text-primary font-semibold text-sm hover:underline">Read more tips</button>
-          </div>
 
-          <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+          <div className="bg-white border border-slate-100 rounded-xl p-6 shadow-sm">
             <h3 className="text-base font-bold text-deep-brown mb-4">How are we doing?</h3>
             {reviewSubmitted ? (
               <div className="text-center py-4">
@@ -229,7 +252,7 @@ const Dashboard = () => {
                 <button
                   type="submit"
                   disabled={submittingReview}
-                  className="w-full py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-sm shadow-slate-200"
+                  className="w-full py-2.5 bg-primary text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-primary-dark transition-all shadow-sm shadow-primary/20"
                 >
                   {submittingReview ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trophy className="w-3.5 h-3.5 text-accent" />}
                   Submit Testimonial

@@ -22,7 +22,7 @@ const LevelSelector = () => {
   }, []);
 
   return (
-    <div className="pt-24 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="pt-24 pb-16 main-container">
       <SEO 
         title="Choose Your GCE Level"
         description="Select between GCE Ordinary Level (O-Level) or Advanced Level (A-Level) to access specialized papers and solutions."
@@ -33,8 +33,8 @@ const LevelSelector = () => {
           <span className="text-xs font-bold tracking-widest text-primary uppercase">Select your path</span>
           <span className="w-8 h-1 bg-accent"></span>
         </div>
-        <h1 className="text-3xl md:text-4xl font-bold text-deep-brown mb-4">Choose your level.</h1>
-        <p className="text-lg text-slate-600">Access specialized papers and solutions for your specific GCE examination level.</p>
+        <h1 className="text-2xl md:text-3xl lg:text-4xl font-black text-slate-900 mb-4">Choose your level.</h1>
+        <p className="text-sm md:text-base text-slate-600 font-medium leading-relaxed">Access specialized papers and solutions for your specific GCE examination level.</p>
       </div>
 
       {loading ? (
@@ -77,18 +77,18 @@ const LevelSelector = () => {
         </div>
       )}
 
-      <div className="mt-16 pattern-card max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+      <div className="mt-12 md:mt-16 pattern-card max-w-3xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent">
-            <Star className="w-5 h-5 fill-current" />
+          <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center text-accent shrink-0">
+            <Star className="w-6 h-6 fill-current" />
           </div>
           <div>
-            <h4 className="text-base font-bold text-deep-brown">Not sure where to start?</h4>
-            <p className="text-slate-500 text-sm">Join the community and ask for guidance.</p>
+            <h4 className="text-base font-black text-slate-900">Not sure where to start?</h4>
+            <p className="text-slate-500 text-xs font-medium">Join the community and ask for guidance from experts.</p>
           </div>
         </div>
-        <Link to="/community" className="text-primary font-semibold flex items-center gap-2 hover:gap-3 transition-all uppercase tracking-widest text-xs">
-          Visit Forum <ArrowRight className="w-4 h-4" />
+        <Link to="/community" className="w-full md:w-auto bg-slate-900 text-white px-6 py-3.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-primary transition-all shadow-xl shadow-slate-900/10">
+          Visit Community Forum <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
     </div>
@@ -100,16 +100,16 @@ const LevelCard = ({ title, subtitle, desc, icon, color, link }: any) => (
     whileHover={{ y: -5 }}
     className="pattern-card group cursor-pointer h-full flex flex-col p-8"
   >
-    <div className={`${color} w-16 h-16 rounded-xl flex items-center justify-center mb-6 shadow-sm group-hover:scale-105 transition-transform`}>
+    <div className={`${color} w-16 h-16 rounded-lg flex items-center justify-center mb-6 shadow-sm group-hover:scale-105 transition-transform`}>
       {icon}
     </div>
     <div className="flex-1">
-      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-2 block">{subtitle}</span>
-      <h2 className="text-2xl font-bold text-deep-brown mb-3">{title}</h2>
-      <p className="text-slate-600 text-sm leading-relaxed mb-6">{desc}</p>
+      <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 block">{subtitle}</span>
+      <h2 className="text-xl md:text-2xl font-black text-slate-900 mb-3">{title}</h2>
+      <p className="text-slate-600 text-sm font-medium leading-relaxed mb-8">{desc}</p>
     </div>
-    <Link to={link} className="btn-primary w-full py-3 text-sm text-center">
-      Browse Subjects
+    <Link to={link} className="w-full bg-slate-900 text-white py-4 rounded-lg text-xs font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-primary transition-all shadow-xl shadow-slate-900/10">
+      Browse {title} <ArrowRight className="w-4 h-4" />
     </Link>
   </motion.div>
 );

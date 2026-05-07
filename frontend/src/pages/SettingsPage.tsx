@@ -7,7 +7,7 @@ import { User, Shield, Phone, GraduationCap, Mail, Save, Lock } from 'lucide-rea
 import api from '../api/api';
 
 const SettingsPage = () => {
-  const { user, login } = useAuth();
+  const { user, updateUser } = useAuth();
   
   // Profile State
   const [profileData, setProfileData] = useState({
@@ -44,16 +44,21 @@ const SettingsPage = () => {
     setProfileMessage({ type: '', text: '' });
     
     try {
-      const res = await api.put('/users/me', {
+      const payload: any = {
         full_name: profileData.fullName,
         whatsapp_number: profileData.whatsappNumber,
-        level: profileData.level
-      });
+      };
       
-      const token = localStorage.getItem('token');
-      if (token) {
-        login(token, res.data); // Update context
+      // Only include level if user is a student
+      if (user?.role === 'student') {
+        payload.level = profileData.level;
       }
+
+      const res = await api.put('/users/me', payload);
+      
+      // Correctly update the user in AuthContext
+      updateUser(res.data);
+      
       setProfileMessage({ type: 'success', text: 'Profile updated successfully!' });
     } catch (err: any) {
       setProfileMessage({ type: 'error', text: err.response?.data?.detail || 'Failed to update profile.' });
@@ -138,16 +143,18 @@ const SettingsPage = () => {
                   <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5 flex items-center gap-1.5"><Phone className="w-3 h-3"/> WhatsApp Number</label>
                   <Input name="whatsappNumber" value={profileData.whatsappNumber} onChange={handleProfileChange} placeholder="6XX XXX XXX" className="bg-slate-50" />
                 </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5 flex items-center gap-1.5"><GraduationCap className="w-3 h-3"/> GCE Level</label>
-                  <select 
-                    name="level" value={profileData.level} onChange={handleProfileChange}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm appearance-none"
-                  >
-                    <option value="O-Level">Ordinary Level (O-Level)</option>
-                    <option value="A-Level">Advanced Level (A-Level)</option>
-                  </select>
-                </div>
+                {user?.role === 'student' && (
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5 flex items-center gap-1.5"><GraduationCap className="w-3 h-3"/> GCE Level</label>
+                    <select 
+                      name="level" value={profileData.level} onChange={handleProfileChange}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm appearance-none"
+                    >
+                      <option value="O-Level">Ordinary Level (O-Level)</option>
+                      <option value="A-Level">Advanced Level (A-Level)</option>
+                    </select>
+                  </div>
+                )}
               </div>
 
               <div className="pt-4 flex justify-end">
@@ -210,8 +217,8 @@ const SettingsPage = () => {
             <div className="relative z-10">
               <h3 className="text-lg font-bold mb-2">Account Status</h3>
               <div className="flex items-center gap-2 mb-6">
-                <div className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-sm font-semibold text-slate-300">Active Student</span>
+                <div className={`w-2.5 h-2.5 rounded-full animate-pulse ${user?.role === 'admin' ? 'bg-amber-400' : user?.role === 'tutor' ? 'bg-blue-400' : 'bg-green-400'}`}></div>
+                <span className="text-sm font-semibold text-slate-300 capitalize">Active {user?.role}</span>
               </div>
               
               <div className="space-y-4">

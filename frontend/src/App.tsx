@@ -17,7 +17,6 @@ const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
-const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
 import ProtectedRoute from './components/Auth/AuthRoutes';
 
 // Public Pages
@@ -87,7 +86,6 @@ function App() {
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
-                <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
 
                 {/* Protected interactive pages */}
                 <Route element={<ProtectedRoute />}>

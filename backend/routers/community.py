@@ -141,6 +141,46 @@ def create_community(
         created_at=community.created_at.isoformat()
     )
 
+@router.get("/{community_id}", response_model=CommunityResponse)
+def get_community_detail(
+    community_id: uuid.UUID,
+    db: Session = Depends(get_session),
+    current_user: Optional[User] = Depends(require_user)
+):
+    """Get details for a single community."""
+    # Fetch community with member count
+    member_count = db.exec(
+        select(func.count(CommunityMember.user_id))
+        .where(CommunityMember.community_id == community_id, CommunityMember.status == "active")
+    ).one()
+    
+    community = db.get(Community, community_id)
+    if not community:
+        raise HTTPException(status_code=404, detail="Community not found")
+        
+    if community.is_private:
+        # Check if user is a member
+        membership = db.exec(
+            select(CommunityMember).where(
+                CommunityMember.community_id == community_id,
+                CommunityMember.user_id == current_user.id,
+                CommunityMember.status == "active"
+            )
+        ).first()
+        if not membership and current_user.role != "admin":
+            raise HTTPException(status_code=403, detail="Private community access required")
+            
+    return CommunityResponse(
+        id=community.id,
+        name=community.name,
+        description=community.description,
+        category=community.category,
+        is_private=community.is_private,
+        creator_id=community.creator_id,
+        member_count=member_count,
+        created_at=community.created_at.isoformat()
+    )
+
 @router.post("/{community_id}/join")
 def join_community(
     community_id: uuid.UUID,

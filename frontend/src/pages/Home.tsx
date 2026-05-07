@@ -45,8 +45,8 @@ const Home = () => {
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-20">
         
         {/* Background Slider */}
-        <div className="absolute inset-0 z-0">
-          <AnimatePresence mode="wait">
+        <div className="absolute inset-0 z-0 bg-slate-900">
+          <AnimatePresence>
             <motion.img
               key={currentImageIndex}
               src={backgroundImages[currentImageIndex]}
@@ -59,10 +59,10 @@ const Home = () => {
             />
           </AnimatePresence>
           {/* Glassmorphic Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-deep-brown/95 via-deep-brown/80 to-primary/40 backdrop-blur-[2px]"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-deep-brown/95 via-deep-brown/80 to-primary/40 backdrop-blur-[2px] z-10"></div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 w-full">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             
             {/* Left Content */}
@@ -81,13 +81,13 @@ const Home = () => {
               
               {user ? (
                 <>
-                  <h1 className="text-5xl md:text-7xl font-black text-white mb-6 leading-[1.1] tracking-tight">
+                  <h1 className="text-3xl md:text-5xl lg:text-7xl font-black text-white mb-6 leading-[1.1] tracking-tight">
                     Ready to <br />
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-light to-accent">
                       Continue?
                     </span>
                   </h1>
-                  <p className="text-lg md:text-xl text-slate-300 mb-10 max-w-xl leading-relaxed font-medium">
+                  <p className="text-base md:text-xl text-slate-300 mb-6 md:mb-10 max-w-xl leading-relaxed font-medium">
                     You're doing great! Jump back into your subjects and keep that streak alive. Every paper solved is a step closer to success.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4">
@@ -102,13 +102,13 @@ const Home = () => {
                 </>
               ) : (
                 <>
-                  <h1 className="text-5xl md:text-7xl font-black text-white mb-6 leading-[1.1] tracking-tight">
+                  <h1 className="text-3xl md:text-5xl lg:text-7xl font-black text-white mb-6 leading-[1.1] tracking-tight">
                     Master the GCE. <br />
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-light to-accent">
                       The First Choice Way.
                     </span>
                   </h1>
-                  <p className="text-lg md:text-xl text-slate-300 mb-10 max-w-xl leading-relaxed font-medium">
+                  <p className="text-base md:text-xl text-slate-300 mb-6 md:mb-10 max-w-xl leading-relaxed font-medium">
                     Expert video solutions for every past paper. Join thousands of students in the most trusted e-learning community in Cameroon.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4">
@@ -129,7 +129,7 @@ const Home = () => {
               <motion.div 
                 animate={{ y: [0, -20, 0] }}
                 transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute top-10 right-10 w-72 bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-6 shadow-2xl"
+                className="absolute top-10 right-10 w-72 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl"
               >
                 <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center mb-4 border border-primary/30">
                   <Play className="w-6 h-6 text-primary-light ml-1" />
@@ -141,7 +141,7 @@ const Home = () => {
               <motion.div 
                 animate={{ y: [0, 20, 0] }}
                 transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="absolute bottom-10 left-10 w-72 bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-6 shadow-2xl"
+                className="absolute bottom-10 left-10 w-72 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl"
               >
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex -space-x-3">
@@ -224,7 +224,7 @@ const Home = () => {
               <p className="text-slate-500 font-medium">Join thousands of students who have already transformed their GCE preparation.</p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {reviews.map((review, i) => (
                 <motion.div 
                   initial={{ opacity: 0, y: 20 }}
@@ -232,7 +232,7 @@ const Home = () => {
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
                   key={review.id} 
-                  className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm relative"
+                  className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm relative"
                 >
                   <Quote className="absolute top-6 right-6 w-10 h-10 text-slate-50 opacity-50" />
                   <div className="flex gap-1 mb-4">
@@ -297,11 +297,11 @@ const FeatureCard = ({ icon, title, desc }: { icon: React.ReactNode, title: stri
     <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
     
     {/* Card Content */}
-    <div className="relative h-full bg-white border border-slate-100 rounded-3xl p-8 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 flex flex-col z-10">
+    <div className="relative h-full bg-white border border-slate-100 rounded-2xl p-8 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 flex flex-col z-10">
       <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-primary group-hover:text-white transition-all duration-300 text-primary">
         {React.cloneElement(icon as React.ReactElement<any>, { className: "w-7 h-7" })}
       </div>
-      <h3 className="text-2xl font-black text-deep-brown mb-3 tracking-tight">{title}</h3>
+      <h3 className="text-xl md:text-2xl font-black text-deep-brown mb-3 tracking-tight">{title}</h3>
       <p className="text-base text-slate-600 leading-relaxed mb-8 flex-1">{desc}</p>
       <Link to="/about" className="flex items-center gap-2 text-primary font-bold text-sm hover:gap-3 transition-all cursor-pointer mt-auto">
         Learn more <ArrowUpRight className="w-4 h-4" />

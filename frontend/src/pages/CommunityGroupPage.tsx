@@ -30,15 +30,14 @@ const CommunityGroupPage = () => {
     const fetchData = async () => {
         try {
             const [commRes, threadsRes] = await Promise.all([
-                api.get(`/community/`),
+                api.get(`/community/${id}`),
                 api.get(`/community/${id}/threads`)
             ]);
             
-            const foundComm = commRes.data.find((c: any) => c.id === id);
-            setCommunity(foundComm);
+            setCommunity(commRes.data);
             setThreads(threadsRes.data);
 
-            if (foundComm?.creator_id === currentUser?.id) {
+            if (commRes.data?.creator_id === currentUser?.id) {
                 const reqRes = await api.get(`/community/${id}/requests`);
                 setJoinRequests(reqRes.data);
             }
@@ -115,7 +114,7 @@ const CommunityGroupPage = () => {
                     </button>
 
                     <div className="mb-10">
-                        <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center text-primary shadow-sm border border-slate-100 mb-6">
+                        <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center text-primary shadow-sm border border-slate-100 mb-6">
                             <Users className="w-8 h-8" />
                         </div>
                         <h1 className="text-xl font-black text-slate-900 mb-2 leading-tight">{community.name}</h1>
@@ -145,26 +144,12 @@ const CommunityGroupPage = () => {
                     </div>
                 </div>
 
-                <div className="p-6">
-                    <div className="bg-slate-900 text-white rounded-[2rem] p-6 shadow-xl shadow-slate-900/10 border border-white/5">
-                         <div className="flex items-center gap-3 mb-4">
-                            <Shield className="w-4 h-4 text-primary" />
-                            <p className="text-[10px] font-black uppercase tracking-widest">Security Protocol</p>
-                         </div>
-                         <p className="text-[10px] font-bold text-slate-400 leading-relaxed mb-6">
-                            This community is encrypted and moderated. Follow our code of conduct at all times.
-                         </p>
-                         <button className="w-full py-3 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">
-                            View Rules
-                         </button>
-                    </div>
-                </div>
             </aside>
 
             {/* Main Content Area */}
             <main className="flex-1 flex flex-col h-full overflow-hidden bg-white">
                 {/* 🌟 New & Improved Floating Header Hub */}
-                <header className="px-6 md:px-10 pt-6 pb-2 shrink-0 bg-white z-10">
+                <header className="px-4 md:px-10 pt-6 pb-2 shrink-0 bg-white z-10">
                     <div className="flex items-center justify-between mb-8">
                         <div>
                             <h2 className="text-3xl font-black text-slate-900 tracking-tight leading-none mb-2">{community.name}</h2>
@@ -175,7 +160,7 @@ const CommunityGroupPage = () => {
                         </div>
                         <button 
                             onClick={() => setShowCreateModal(true)}
-                            className="bg-primary text-white p-3 md:px-8 md:py-4 rounded-2xl md:rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest shadow-2xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
+                            className="bg-primary text-white p-3 md:px-8 md:py-4 rounded-xl md:rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-2xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
                         >
                             <Plus className="w-5 h-5 md:w-4 md:h-4" />
                             <span className="hidden md:inline">Start Topic</span>
@@ -183,7 +168,7 @@ const CommunityGroupPage = () => {
                     </div>
 
                     {/* Elevated Tab Navigation Bar */}
-                    <div className="bg-slate-50 p-1.5 rounded-[1.5rem] border border-slate-100 flex items-center shadow-sm">
+                    <div className="bg-slate-50 p-1.5 rounded-2xl border border-slate-100 flex items-center shadow-sm">
                         {[
                             { id: 'discussions', label: 'Feed Hub', icon: MessageSquare },
                             { id: 'members', label: 'Active Members', icon: Users },
@@ -192,7 +177,7 @@ const CommunityGroupPage = () => {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex-1 flex items-center justify-center gap-2.5 py-4 rounded-[1.2rem] transition-all relative ${
+                                className={`flex-1 flex items-center justify-center gap-2.5 py-4 rounded-xl transition-all relative ${
                                     activeTab === tab.id 
                                     ? 'bg-white text-primary shadow-sm border border-slate-200/50' 
                                     : 'text-slate-400 hover:text-slate-600'
@@ -212,7 +197,7 @@ const CommunityGroupPage = () => {
                 </header>
 
                 {/* Scrollable Content */}
-                <div className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar bg-white">
+                <div className="flex-1 overflow-y-auto px-0 py-6 md:p-10 custom-scrollbar bg-white">
                     <AnimatePresence mode="wait">
                         {activeTab === 'discussions' && (
                             <motion.div 
@@ -238,7 +223,7 @@ const CommunityGroupPage = () => {
                                 </div>
 
                                 {threads.length === 0 ? (
-                                    <div className="text-center py-24 bg-slate-50/50 border-2 border-dashed border-slate-100 rounded-[3rem]">
+                                    <div className="text-center py-24 bg-slate-50/50 border-2 border-dashed border-slate-100 rounded-3xl">
                                         <MessageSquare className="w-12 h-12 text-slate-200 mx-auto mb-4" />
                                         <h4 className="text-lg font-black text-slate-900 mb-2">Workspace is Quiet</h4>
                                         <p className="text-slate-400 font-medium mb-10 text-sm">Post a question to start the momentum.</p>
@@ -257,9 +242,9 @@ const CommunityGroupPage = () => {
                                             animate={{ opacity: 1, scale: 1 }}
                                             transition={{ delay: i * 0.05 }}
                                             onClick={() => navigate(`/community/thread/${thread.id}`)}
-                                            className="bg-white border border-slate-100 p-8 rounded-[2.5rem] shadow-sm hover:shadow-[0_20px_60px_rgba(0,0,0,0.06)] hover:border-primary/20 transition-all cursor-pointer group flex items-start gap-8 relative overflow-hidden"
+                                            className="bg-white border border-slate-100 p-6 sm:p-8 rounded-2xl shadow-sm hover:shadow-[0_20px_60px_rgba(0,0,0,0.06)] hover:border-primary/20 transition-all cursor-pointer group flex items-start gap-4 sm:gap-8 relative overflow-hidden"
                                         >
-                                            <div className="w-16 h-16 bg-slate-50 rounded-[1.5rem] shrink-0 flex items-center justify-center text-slate-300 font-black text-xl group-hover:bg-primary group-hover:text-white group-hover:scale-105 transition-all shadow-inner">
+                                            <div className="w-16 h-16 bg-slate-50 rounded-xl shrink-0 flex items-center justify-center text-slate-300 font-black text-xl group-hover:bg-primary group-hover:text-white group-hover:scale-105 transition-all shadow-inner">
                                                 {thread.author_name?.charAt(0) || 'U'}
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -267,6 +252,12 @@ const CommunityGroupPage = () => {
                                                     <span className="text-[8px] font-black text-primary uppercase tracking-[0.2em] bg-primary/5 px-2.5 py-1 rounded-lg border border-primary/10">
                                                         {thread.author_role}
                                                     </span>
+                                                    {thread.author_role === 'admin' && (
+                                                        <span className="bg-purple-100 text-purple-600 px-2 py-0.5 rounded-md text-[7px] font-black uppercase tracking-widest">Admin</span>
+                                                    )}
+                                                    {thread.author_role === 'tutor' && (
+                                                        <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-md text-[7px] font-black uppercase tracking-widest">Tutor</span>
+                                                    )}
                                                     <div className="w-1 h-1 bg-slate-200 rounded-full"></div>
                                                     <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
                                                         Posted {new Date(thread.created_at).toLocaleDateString()}
@@ -318,12 +309,12 @@ const CommunityGroupPage = () => {
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                         {joinRequests.length === 0 ? (
-                                            <div className="col-span-full py-20 text-center bg-slate-50 border border-dashed border-slate-200 rounded-[3rem]">
+                                            <div className="col-span-full py-20 text-center bg-slate-50 border border-dashed border-slate-200 rounded-3xl">
                                                 <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Queue is currently empty</p>
                                             </div>
                                         ) : (
                                             joinRequests.map(req => (
-                                                <div key={req.user_id} className="bg-white p-7 rounded-[2.5rem] border border-slate-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+                                                <div key={req.user_id} className="bg-white p-7 rounded-2xl border border-slate-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
                                                     <div className="flex items-center gap-5">
                                                         <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center font-black text-lg">
                                                             {req.full_name.charAt(0)}
@@ -365,7 +356,7 @@ const CommunityGroupPage = () => {
                         <motion.div 
                             initial={{ scale: 0.9, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
-                            className="bg-white w-full max-w-lg rounded-[3rem] p-12 relative shadow-[0_50px_100px_rgba(0,0,0,0.3)] overflow-hidden border border-white/20"
+                            className="bg-white w-full max-w-lg rounded-3xl p-8 sm:p-12 relative shadow-[0_50px_100px_rgba(0,0,0,0.3)] overflow-hidden border border-white/20"
                         >
                             <div className="absolute -top-12 -right-12 p-8 opacity-5">
                                 <Plus className="w-64 h-64 text-primary" />

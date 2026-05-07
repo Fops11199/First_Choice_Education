@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BookOpen, Menu, X, User, LogOut, Settings, AlertCircle, GraduationCap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,6 +9,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
 
   const navLinks = [
@@ -33,6 +34,7 @@ const Navbar = () => {
     logout();
     setShowLogoutConfirm(false);
     setIsOpen(false);
+    navigate('/login', { replace: true });
   };
 
   return (
@@ -113,13 +115,13 @@ const Navbar = () => {
 
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center gap-4">
+            {user && <NotificationMenu />}
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="p-2 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors order-first"
+              className="p-2 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors"
             >
               {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
-            {user && <NotificationMenu />}
           </div>
         </div>
       </div>
@@ -139,11 +141,11 @@ const Navbar = () => {
             
             {/* The Actual Menu Drawer */}
             <motion.div
-              initial={{ x: '-100%' }}
+              initial={{ x: '100%' }}
               animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
+              exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="absolute top-0 left-0 bottom-0 w-[300px] bg-white shadow-2xl flex flex-col border-r border-blue-50"
+              className="absolute top-0 right-0 bottom-0 w-[300px] bg-white shadow-2xl flex flex-col border-l border-blue-50"
             >
               {/* Mobile Header inside Drawer */}
               <div className="h-16 px-6 border-b border-blue-50 flex items-center justify-between shrink-0">

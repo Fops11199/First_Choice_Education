@@ -429,17 +429,28 @@ def add_video_to_paper(
     db: Session = Depends(get_session),
     current_user: User = Depends(require_admin)
 ):
-    """Add a YouTube video solution to a paper."""
+    """Add or update a YouTube video solution for a paper."""
     paper = db.get(Paper, paper_id)
     if not paper:
         raise HTTPException(status_code=404, detail="Paper not found")
     
+    # Check if a video already exists for this paper
+    existing_video = db.exec(select(Video).where(Video.paper_id == paper_id)).first()
+    
+    if existing_video:
+        existing_video.youtube_id = video_data.youtube_id
+        existing_video.creator_id = current_user.id
+        db.add(existing_video)
+        db.commit()
+        db.refresh(existing_video)
+        return {"id": str(existing_video.id), "youtube_id": existing_video.youtube_id, "message": "Video updated"}
+    
     video = Video(**video_data.model_dump(), paper_id=paper_id)
-    video.creator_id = current_user.id  # auto-attribute to admin
+    video.creator_id = current_user.id
     db.add(video)
     db.commit()
     db.refresh(video)
-    return {"id": str(video.id), "youtube_id": video.youtube_id}
+    return {"id": str(video.id), "youtube_id": video.youtube_id, "message": "Video added"}
 
 
 @router.delete("/videos/{video_id}")
@@ -464,16 +475,28 @@ def add_pdf_to_paper(
     db: Session = Depends(get_session),
     current_user: User = Depends(require_admin)
 ):
-    """Add a PDF (question paper or marking scheme) to a paper."""
+    """Add or update a PDF (question paper or marking scheme) for a paper."""
     paper = db.get(Paper, paper_id)
     if not paper:
         raise HTTPException(status_code=404, detail="Paper not found")
+    
+    # Check if a PDF of this type already exists for this paper
+    existing_pdf = db.exec(
+        select(PDF).where(PDF.paper_id == paper_id, PDF.pdf_type == pdf_data.pdf_type)
+    ).first()
+    
+    if existing_pdf:
+        existing_pdf.file_url = pdf_data.file_url
+        db.add(existing_pdf)
+        db.commit()
+        db.refresh(existing_pdf)
+        return {"id": str(existing_pdf.id), "file_url": existing_pdf.file_url, "message": "PDF updated"}
     
     pdf = PDF(**pdf_data.model_dump(), paper_id=paper_id)
     db.add(pdf)
     db.commit()
     db.refresh(pdf)
-    return {"id": str(pdf.id), "file_url": pdf.file_url, "pdf_type": pdf.pdf_type}
+    return {"id": str(pdf.id), "file_url": pdf.file_url, "message": "PDF added"}
 
 
 @router.delete("/pdfs/{pdf_id}")
