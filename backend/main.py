@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import os
 from db.database import init_db
-from routers import auth, content, community, users, students, admin, notifications, reviews
+from routers import auth, content, community, users, students, admin, notifications, reviews, adverts
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -99,6 +99,9 @@ app.include_router(notifications.router, prefix="/api/v1")
 
 # Reviews/Testimonials
 app.include_router(reviews.router, prefix="/api/v1")
+
+# Adverts
+app.include_router(adverts.router, prefix="/api/v1")
 
 # Static Files (PDFs)
 if not os.path.exists("uploads"):

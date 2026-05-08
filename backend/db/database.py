@@ -2,7 +2,7 @@ from sqlmodel import create_engine, SQLModel, Session
 from core.config import settings
 
 # Import models here to register them with SQLModel.metadata
-from models import user, content, community, progress, notification, review
+from models import user, content, community, progress, notification, review, advert
 
 engine = create_engine(
     settings.DATABASE_URL, 

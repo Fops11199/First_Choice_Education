@@ -10,7 +10,7 @@ import api from '../api/api';
 import { useAuth } from '../context/AuthContext';
 
 const CommunityGroupPage = () => {
-    const { id } = useParams();
+    const { groupId: id } = useParams();
     const navigate = useNavigate();
     const { user: currentUser } = useAuth();
     
@@ -37,7 +37,8 @@ const CommunityGroupPage = () => {
             setCommunity(commRes.data);
             setThreads(threadsRes.data);
 
-            if (commRes.data?.creator_id === currentUser?.id) {
+            // Allow both creator and global admin to see requests
+            if (commRes.data?.creator_id === currentUser?.id || currentUser?.role === 'admin') {
                 const reqRes = await api.get(`/community/${id}/requests`);
                 setJoinRequests(reqRes.data);
             }
@@ -49,8 +50,10 @@ const CommunityGroupPage = () => {
     };
 
     useEffect(() => {
-        fetchData();
-    }, [id]);
+        if (id) {
+            fetchData();
+        }
+    }, [id, currentUser?.id]);
 
     const handleCreateThread = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -98,7 +101,7 @@ const CommunityGroupPage = () => {
         return <div className="h-full flex items-center justify-center p-8 text-slate-400 font-bold uppercase tracking-widest">Community not found</div>;
     }
 
-    const isAdmin = community.creator_id === currentUser?.id;
+    const isAdmin = community.creator_id === currentUser?.id || currentUser?.role === 'admin';
 
     return (
         <div className="h-full flex flex-col md:flex-row overflow-hidden bg-white">
@@ -356,7 +359,7 @@ const CommunityGroupPage = () => {
                         <motion.div 
                             initial={{ scale: 0.9, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
-                            className="bg-white w-full max-w-lg rounded-3xl p-8 sm:p-12 relative shadow-[0_50px_100px_rgba(0,0,0,0.3)] overflow-hidden border border-white/20"
+                            className="bg-white w-full max-w-2xl rounded-[3rem] p-8 sm:p-14 relative shadow-[0_50px_100px_rgba(0,0,0,0.3)] overflow-hidden border border-white/20"
                         >
                             <div className="absolute -top-12 -right-12 p-8 opacity-5">
                                 <Plus className="w-64 h-64 text-primary" />
@@ -375,7 +378,7 @@ const CommunityGroupPage = () => {
                                         value={newThreadTitle}
                                         onChange={(e) => setNewThreadTitle(e.target.value)}
                                         placeholder="What should we talk about?"
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-3xl py-6 px-8 text-base font-bold focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all shadow-inner"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-[2rem] py-8 px-10 text-lg font-bold focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all shadow-inner"
                                     />
                                 </div>
                                 <div className="flex gap-4 pt-6">

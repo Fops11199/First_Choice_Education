@@ -85,14 +85,14 @@ const CommunityPage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Main Content */}
         <div className="lg:col-span-3 space-y-4">
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center gap-3 mb-6 shadow-sm ring-1 ring-slate-100">
-            <Search className="text-slate-400 w-5 h-5" />
+          <div className="bg-white border border-slate-200 rounded-[2rem] p-6 flex items-center gap-4 mb-10 shadow-sm ring-1 ring-slate-100">
+            <Search className="text-slate-400 w-6 h-6" />
             <input 
               type="text" 
               placeholder="Search communities by name or category..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent border-none focus:outline-none font-bold text-slate-700 text-sm" 
+              className="flex-1 bg-transparent border-none focus:outline-none font-bold text-slate-700 text-base" 
             />
           </div>
 
@@ -222,7 +222,7 @@ const CommunityPage = () => {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white rounded-2xl p-6 sm:p-10 w-full max-w-xl shadow-2xl overflow-hidden"
+              className="relative bg-white rounded-[3rem] p-8 md:p-14 w-full max-w-2xl shadow-2xl overflow-hidden border border-slate-100"
             >
               <div className="absolute top-0 right-0 p-6">
                 <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400">

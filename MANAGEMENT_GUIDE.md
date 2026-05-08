@@ -62,7 +62,36 @@ The frontend is served as static files by **Nginx**.
 
 ---
 
-## 📁 3. Important Locations
+## 🗄️ 3. Database Management
+The database is **PostgreSQL** running on port `5434`.
+
+### 📋 Common Commands
+- **Access Database CLI**: Connect directly to query data or manage users.
+  ```bash
+  psql -h 127.0.0.1 -p 5434 -U fops -d firstchoice
+  ```
+  *(It will prompt for the password found in your `.env` file)*
+
+- **Backup Database**: Create a safety copy of all your data.
+  ```bash
+  pg_dump -h 127.0.0.1 -p 5434 -U fops -d firstchoice > backup_$(date +%Y%m%d).sql
+  ```
+
+- **Restore Database**: Restore from a previously created backup file.
+  ```bash
+  psql -h 127.0.0.1 -p 5434 -U fops -d firstchoice < your_backup_file.sql
+  ```
+
+### 🔐 Managing the Password
+If you change the database password:
+1. **In Postgres**: Run `ALTER USER fops WITH PASSWORD 'new_password';` inside the `psql` console.
+2. **In `.env`**: Update the `DATABASE_URL`.
+   - **Note**: If your password contains special characters like `@`, you must URL-encode them (e.g., `@` becomes `%40`).
+3. **Restart Backend**: `sudo systemctl restart firstchoice-backend`.
+
+---
+
+## 📁 4. Important Locations
 - **Backend Directory**: `backend/`
 - **Frontend Directory**: `frontend/`
 - **Frontend Production Files**: `frontend/dist/`
@@ -71,7 +100,7 @@ The frontend is served as static files by **Nginx**.
 
 ---
 
-## 🔄 4. Summary: How to update the site?
+## 🔄 5. Summary: How to update the site?
 If you want to update both the Frontend and Backend with new code:
 
 1. **Upload/Save** your new code files to the server.

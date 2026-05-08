@@ -124,14 +124,14 @@ const AdminUsers = () => {
       <div className="bg-white border border-blue-50 rounded-[2.5rem] shadow-sm overflow-hidden flex flex-col min-h-[600px]">
         {/* Toolbar */}
         <div className="p-6 border-b border-blue-50 flex flex-col xl:flex-row items-center justify-between gap-6 bg-blue-50/10">
-          <div className="relative w-full max-w-md">
+          <div className="relative w-full max-w-xl">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-200" />
             <input 
               type="text" 
               placeholder="Search users by name or email..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white border border-blue-100 rounded-xl text-sm font-semibold focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all"
+              className="w-full pl-12 pr-4 py-4 bg-white border border-blue-100 rounded-xl text-sm font-semibold focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all shadow-sm"
             />
           </div>
           
@@ -359,7 +359,7 @@ const AdminUsers = () => {
 const ModalWrapper = ({ children, onClose }: any) => (
   <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={onClose} />
-    <motion.div initial={{ opacity: 0, scale: 0.9, y: 40 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 40 }} className="relative bg-white rounded-[3rem] p-10 w-full max-w-md shadow-2xl overflow-hidden border border-blue-50">
+    <motion.div initial={{ opacity: 0, scale: 0.9, y: 40 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 40 }} className="relative bg-white rounded-[3rem] p-10 w-full max-w-2xl shadow-2xl overflow-hidden border border-blue-50">
       {children}
     </motion.div>
   </div>

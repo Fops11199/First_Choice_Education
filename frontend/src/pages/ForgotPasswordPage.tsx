@@ -83,7 +83,7 @@ const ForgotPasswordPage = () => {
           <div className="bg-primary/10 p-2.5 rounded-xl">
             <BookOpen className="w-6 h-6 text-primary" />
           </div>
-          <span className="text-xl font-black tracking-tight text-slate-900">First Choice.</span>
+          <span className="text-xl font-black tracking-tight text-slate-900">First Choice Education</span>
         </div>
 
         <h1 className="text-3xl font-black text-slate-900 mb-2">

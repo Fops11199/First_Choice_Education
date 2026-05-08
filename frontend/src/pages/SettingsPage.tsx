@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { User, Shield, Phone, GraduationCap, Mail, Save, Lock } from 'lucide-react';
+import { User, Phone, GraduationCap, Mail, Save, Lock } from 'lucide-react';
 import api from '../api/api';
 
 const SettingsPage = () => {
@@ -95,146 +95,143 @@ const SettingsPage = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 pt-24 w-full">
-      <div className="mb-10">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="w-6 h-1 bg-accent"></span>
-          <span className="text-[10px] font-bold tracking-widest text-primary uppercase">Settings</span>
-        </div>
-        <h1 className="text-3xl md:text-4xl font-bold text-deep-brown mb-2">Account Preferences.</h1>
-        <p className="text-slate-500 font-medium text-sm">Manage your personal information and security.</p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Profile Settings */}
-        <div className="lg:col-span-2 space-y-6">
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            className="bg-white border border-slate-100 rounded-2xl p-6 md:p-8 shadow-sm"
-          >
-            <div className="flex items-center gap-3 mb-8 border-b border-slate-100 pb-4">
-              <div className="p-2.5 bg-primary/10 rounded-xl">
-                <User className="w-5 h-5 text-primary" />
-              </div>
-              <h2 className="text-xl font-bold text-deep-brown">Personal Information</h2>
-            </div>
-
-            <form onSubmit={saveProfile} className="space-y-6">
-              {profileMessage.text && (
-                <div className={`p-4 text-sm font-bold rounded-xl flex items-center gap-2 ${profileMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
-                  <div className={`w-2 h-2 rounded-full ${profileMessage.type === 'success' ? 'bg-green-500' : 'bg-red-600'}`}></div>
-                  {profileMessage.text}
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5 flex items-center gap-1.5"><User className="w-3 h-3"/> Full Name</label>
-                  <Input name="fullName" value={profileData.fullName} onChange={handleProfileChange} placeholder="John Doe" required className="bg-slate-50" />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5 flex items-center gap-1.5"><Mail className="w-3 h-3"/> Email Address</label>
-                  <Input value={user?.email} disabled className="bg-slate-100 text-slate-500 cursor-not-allowed opacity-70" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5 flex items-center gap-1.5"><Phone className="w-3 h-3"/> WhatsApp Number</label>
-                  <Input name="whatsappNumber" value={profileData.whatsappNumber} onChange={handleProfileChange} placeholder="6XX XXX XXX" className="bg-slate-50" />
-                </div>
-                {user?.role === 'student' && (
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5 flex items-center gap-1.5"><GraduationCap className="w-3 h-3"/> GCE Level</label>
-                    <select 
-                      name="level" value={profileData.level} onChange={handleProfileChange}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm appearance-none"
-                    >
-                      <option value="O-Level">Ordinary Level (O-Level)</option>
-                      <option value="A-Level">Advanced Level (A-Level)</option>
-                    </select>
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-4 flex justify-end">
-                <Button type="submit" isLoading={isProfileSaving} className="gap-2 px-8 py-3 text-sm shadow-md">
-                  {!isProfileSaving && <Save className="w-4 h-4" />}
-                  Save Changes
-                </Button>
-              </div>
-            </form>
-          </motion.div>
-
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-            className="bg-white border border-slate-100 rounded-2xl p-6 md:p-8 shadow-sm"
-          >
-            <div className="flex items-center gap-3 mb-8 border-b border-slate-100 pb-4">
-              <div className="p-2.5 bg-accent/10 rounded-xl">
-                <Shield className="w-5 h-5 text-accent" />
-              </div>
-              <h2 className="text-xl font-bold text-deep-brown">Security</h2>
-            </div>
-
-            <form onSubmit={savePassword} className="space-y-6">
-              {passwordMessage.text && (
-                <div className={`p-4 text-sm font-bold rounded-xl flex items-center gap-2 ${passwordMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
-                  <div className={`w-2 h-2 rounded-full ${passwordMessage.type === 'success' ? 'bg-green-500' : 'bg-red-600'}`}></div>
-                  {passwordMessage.text}
-                </div>
-              )}
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5 flex items-center gap-1.5"><Lock className="w-3 h-3"/> Current Password</label>
-                <Input type="password" name="currentPassword" value={passwordData.currentPassword} onChange={handlePasswordChange} placeholder="••••••••" required className="bg-slate-50 max-w-md" />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">New Password</label>
-                  <Input type="password" name="newPassword" value={passwordData.newPassword} onChange={handlePasswordChange} placeholder="••••••••" required className="bg-slate-50" />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Confirm New</label>
-                  <Input type="password" name="confirmPassword" value={passwordData.confirmPassword} onChange={handlePasswordChange} placeholder="••••••••" required className="bg-slate-50" />
-                </div>
-              </div>
-
-              <div className="pt-4">
-                <Button type="submit" isLoading={isPasswordSaving} variant="outline" className="gap-2 px-8 py-3 text-sm">
-                  Change Password
-                </Button>
-              </div>
-            </form>
-          </motion.div>
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12">
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="w-6 h-1 bg-accent"></span>
+            <span className="text-[10px] font-bold tracking-widest text-primary uppercase">Settings</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-black text-deep-brown mb-2 tracking-tight">Account Preferences.</h1>
+          <p className="text-slate-500 font-medium text-base">Manage your personal information and security protocols.</p>
         </div>
 
-        {/* Info Sidebar */}
-        <div className="space-y-6">
-          <div className="bg-slate-900 rounded-2xl p-6 text-white relative overflow-hidden shadow-xl">
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/30 rounded-full blur-3xl"></div>
-            <div className="relative z-10">
-              <h3 className="text-lg font-bold mb-2">Account Status</h3>
-              <div className="flex items-center gap-2 mb-6">
-                <div className={`w-2.5 h-2.5 rounded-full animate-pulse ${user?.role === 'admin' ? 'bg-amber-400' : user?.role === 'tutor' ? 'bg-blue-400' : 'bg-green-400'}`}></div>
-                <span className="text-sm font-semibold text-slate-300 capitalize">Active {user?.role}</span>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-white/10">
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Joined</p>
-                  <p className="text-sm font-semibold">April 2024</p>
-                </div>
-                <div className="bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-white/10">
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Role</p>
-                  <p className="text-sm font-semibold capitalize">{user?.role}</p>
-                </div>
-              </div>
+        <div className="bg-slate-900 rounded-2xl px-6 py-4 text-white flex items-center gap-6 shadow-xl border border-slate-800 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700"></div>
+          <div className="relative z-10">
+            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-1">Account Status</p>
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full animate-pulse ${user?.role === 'admin' ? 'bg-amber-400' : user?.role === 'tutor' ? 'bg-blue-400' : 'bg-green-400'}`}></div>
+              <span className="text-xs font-bold text-slate-200 capitalize">Active {user?.role}</span>
             </div>
           </div>
+          <div className="w-px h-8 bg-white/10"></div>
+          <div className="relative z-10">
+            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-1">Member Since</p>
+            <p className="text-xs font-bold text-white">April 2024</p>
+          </div>
         </div>
+      </div>
 
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
+        
+        {/* Profile Settings */}
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+          className="bg-white border border-slate-100 rounded-2xl p-6 md:p-10 shadow-sm flex flex-col"
+        >
+          <div className="flex items-center gap-3 mb-10 border-b border-slate-100 pb-6">
+            <div className="p-3 bg-primary/10 rounded-2xl text-primary">
+              <User className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-black text-deep-brown">Personal Information</h2>
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Update your basic identity</p>
+            </div>
+          </div>
+
+          <form onSubmit={saveProfile} className="space-y-8 flex-1 flex flex-col">
+            {profileMessage.text && (
+              <div className={`p-5 text-sm font-bold rounded-2xl flex items-center gap-3 ${profileMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+                <div className={`w-2.5 h-2.5 rounded-full ${profileMessage.type === 'success' ? 'bg-green-500' : 'bg-red-600'}`}></div>
+                {profileMessage.text}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-2">
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 flex items-center gap-1.5"><User className="w-3 h-3"/> Full Name</label>
+                <Input name="fullName" value={profileData.fullName} onChange={handleProfileChange} placeholder="John Doe" required className="bg-slate-50 py-4" />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 flex items-center gap-1.5"><Mail className="w-3 h-3"/> Email Address</label>
+                <Input value={user?.email} disabled className="bg-slate-100 text-slate-500 cursor-not-allowed opacity-70 py-4" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-2">
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 flex items-center gap-1.5"><Phone className="w-3 h-3"/> WhatsApp Number</label>
+                <Input name="whatsappNumber" value={profileData.whatsappNumber} onChange={handleProfileChange} placeholder="6XX XXX XXX" className="bg-slate-50 py-4" />
+              </div>
+              {user?.role === 'student' && (
+                <div className="space-y-2">
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 flex items-center gap-1.5"><GraduationCap className="w-3 h-3"/> GCE Level</label>
+                  <select 
+                    name="level" value={profileData.level} onChange={handleProfileChange}
+                    className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm appearance-none"
+                  >
+                    <option value="O-Level">Ordinary Level (O-Level)</option>
+                    <option value="A-Level">Advanced Level (A-Level)</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-8 mt-auto flex justify-end">
+              <Button type="submit" isLoading={isProfileSaving} className="gap-2 px-10 py-4 text-sm shadow-xl shadow-primary/10 rounded-2xl">
+                {!isProfileSaving && <Save className="w-5 h-5" />}
+                Sync Profile
+              </Button>
+            </div>
+          </form>
+        </motion.div>
+
+        {/* Security Settings */}
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="bg-white border border-slate-100 rounded-2xl p-6 md:p-10 shadow-sm flex flex-col"
+        >
+          <div className="flex items-center gap-3 mb-10 border-b border-slate-100 pb-6">
+            <div className="p-3 bg-accent/10 rounded-2xl text-accent">
+              <Lock className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-black text-deep-brown">Security</h2>
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Manage your access credentials</p>
+            </div>
+          </div>
+
+          <form onSubmit={savePassword} className="space-y-8 flex-1 flex flex-col">
+            {passwordMessage.text && (
+              <div className={`p-5 text-sm font-bold rounded-2xl flex items-center gap-3 ${passwordMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+                <div className={`w-2.5 h-2.5 rounded-full ${passwordMessage.type === 'success' ? 'bg-green-500' : 'bg-red-600'}`}></div>
+                {passwordMessage.text}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 flex items-center gap-1.5"><Lock className="w-3 h-3"/> Current Password</label>
+              <Input type="password" name="currentPassword" value={passwordData.currentPassword} onChange={handlePasswordChange} placeholder="••••••••" required className="bg-slate-50 py-4 w-full" />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-2">
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1">New Password</label>
+                <Input type="password" name="newPassword" value={passwordData.newPassword} onChange={handlePasswordChange} placeholder="••••••••" required className="bg-slate-50 py-4" />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1">Confirm New</label>
+                <Input type="password" name="confirmPassword" value={passwordData.confirmPassword} onChange={handlePasswordChange} placeholder="••••••••" required className="bg-slate-50 py-4" />
+              </div>
+            </div>
+
+            <div className="pt-8 mt-auto">
+              <Button type="submit" isLoading={isPasswordSaving} variant="outline" className="gap-2 px-10 py-4 text-sm rounded-2xl w-full md:w-auto">
+                Change Password
+              </Button>
+            </div>
+          </form>
+        </motion.div>
       </div>
     </div>
   );

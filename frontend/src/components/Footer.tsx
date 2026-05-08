@@ -15,7 +15,7 @@ const Footer = () => {
               <div className="bg-primary p-2 rounded-xl">
                 <BookOpen className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xl font-black tracking-tight uppercase">First Choice</span>
+              <span className="text-xl font-black tracking-tight uppercase">First Choice Education</span>
             </Link>
             <p className="text-white/60 font-medium leading-relaxed">
               Empowering Cameroonian students to achieve excellence in their GCE exams through expert-led video solutions and a supportive community.

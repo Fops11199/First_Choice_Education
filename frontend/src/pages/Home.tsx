@@ -105,7 +105,7 @@ const Home = () => {
                   <h1 className="text-3xl md:text-5xl lg:text-7xl font-black text-white mb-6 leading-[1.1] tracking-tight">
                     Master the GCE. <br />
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-light to-accent">
-                      The First Choice Way.
+                      The First Choice Education Way.
                     </span>
                   </h1>
                   <p className="text-base md:text-xl text-slate-300 mb-6 md:mb-10 max-w-xl leading-relaxed font-medium">

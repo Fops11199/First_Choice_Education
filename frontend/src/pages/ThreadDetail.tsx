@@ -100,7 +100,7 @@ const ThreadDetail = () => {
     <div className="h-full flex flex-col md:flex-row overflow-hidden bg-slate-50">
       {/* Main Chat View */}
       <div className="flex-1 flex flex-col h-full overflow-hidden border-r border-slate-100/10">
-        {/* First Choice Header */}
+        {/* First Choice Education Header */}
         <header className="h-16 bg-white border-b border-slate-100 flex items-center justify-between px-4 shrink-0 z-20 shadow-sm">
             <div className="flex items-center gap-3">
                 <button 
@@ -220,7 +220,7 @@ const ThreadDetail = () => {
             <div ref={messagesEndRef} className="h-4" />
         </div>
 
-        {/* First Choice Style Input Bar */}
+        {/* First Choice Education Style Input Bar */}
         <footer className="bg-white p-4 md:p-6 shrink-0 border-t border-slate-100" style={{ paddingBottom: inputBottom > 0 ? `${inputBottom + 16}px` : undefined }}>
             <div className="max-w-4xl mx-auto">
                 <AnimatePresence>

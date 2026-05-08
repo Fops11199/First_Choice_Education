@@ -41,7 +41,7 @@ const RegisterForm = () => {
 
     const success = await register(fullName, email, password, whatsappNumber, level);
     if (success) {
-      toast.success('Welcome to First Choice!', { description: "Your account is ready. Let's get started!" });
+      toast.success('Welcome to First Choice Education!', { description: "Your account is ready. Let's get started!" });
       navigate('/dashboard');
     }
   };
@@ -61,7 +61,7 @@ const RegisterForm = () => {
             <div className="bg-primary p-2.5 rounded-lg">
               <BookOpen className="w-6 h-6 text-white" />
             </div>
-            <span className="text-white text-xl font-black tracking-tight">First Choice</span>
+            <span className="text-white text-xl font-black tracking-tight">First Choice Education</span>
           </Link>
 
           <h2 className="text-4xl font-black text-white leading-tight mb-4">
@@ -97,7 +97,7 @@ const RegisterForm = () => {
           <div className="bg-primary p-2 rounded-lg">
             <BookOpen className="w-5 h-5 text-white" />
           </div>
-          <span className="text-slate-800 text-lg font-black">First Choice</span>
+          <span className="text-slate-800 text-lg font-black">First Choice Education</span>
         </Link>
 
         <motion.div
@@ -214,9 +214,8 @@ const RegisterForm = () => {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Repeat password"
-                    className={`w-full px-4 py-3.5 pr-11 bg-slate-50 border rounded-lg focus:outline-none focus:ring-4 focus:ring-primary/5 transition-all text-slate-800 font-medium placeholder:text-slate-300 text-sm ${
-                      confirmPassword && confirmPassword !== password ? 'border-red-300 focus:border-red-400' : 'border-slate-200 focus:border-primary'
-                    }`}
+                    className={`w-full px-4 py-3.5 pr-11 bg-slate-50 border rounded-lg focus:outline-none focus:ring-4 focus:ring-primary/5 transition-all text-slate-800 font-medium placeholder:text-slate-300 text-sm ${confirmPassword && confirmPassword !== password ? 'border-red-300 focus:border-red-400' : 'border-slate-200 focus:border-primary'
+                      }`}
                   />
                   <button
                     type="button"
@@ -240,11 +239,10 @@ const RegisterForm = () => {
                     key={l}
                     type="button"
                     onClick={() => setLevel(l)}
-                    className={`py-3.5 rounded-lg text-sm font-bold transition-all border ${
-                      level === l
+                    className={`py-3.5 rounded-lg text-sm font-bold transition-all border ${level === l
                         ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
                         : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-primary/40'
-                    }`}
+                      }`}
                   >
                     {l === 'O-Level' ? 'Ordinary Level' : 'Advanced Level'}
                     <span className="block text-[10px] font-semibold opacity-70 mt-0.5">{l}</span>

@@ -71,7 +71,7 @@ const OnboardingPage = () => {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-3xl bg-white md:rounded-3xl shadow-2xl overflow-hidden relative z-10 border border-slate-100 min-h-[100vh] md:min-h-0"
+        className="w-full max-w-4xl bg-white md:rounded-[3rem] shadow-2xl overflow-hidden relative z-10 border border-slate-100 min-h-[100vh] md:min-h-0"
       >
         <div className="bg-slate-900 p-8 text-white relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl transform translate-x-1/2 -translate-y-1/2"></div>
@@ -79,7 +79,7 @@ const OnboardingPage = () => {
             <div className="bg-white/20 p-2.5 rounded-xl backdrop-blur-sm">
               <BookOpen className="w-6 h-6 text-white" />
             </div>
-            <span className="text-xl font-black tracking-tight">First Choice.</span>
+            <span className="text-xl font-black tracking-tight">First Choice Education</span>
           </div>
           <h2 className="text-3xl font-black mb-2 relative z-10">Welcome aboard, {user?.full_name?.split(' ')[0] || 'Scholar'}!</h2>
           <p className="text-slate-300 font-medium relative z-10">Let's finish setting up your profile so we can personalize your learning experience.</p>

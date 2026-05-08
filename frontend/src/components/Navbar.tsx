@@ -13,7 +13,7 @@ const Navbar = () => {
   const location = useLocation();
 
   const navLinks = [
-    { name: 'GCE Levels', path: '/levels' },
+    ...(user ? [] : [{ name: 'GCE Levels', path: '/levels' }]),
     { name: 'Subjects', path: '/subjects' },
     { name: 'Community', path: '/community' },
   ];
@@ -48,7 +48,7 @@ const Navbar = () => {
               <BookOpen className="w-5 h-5 text-white" />
             </div>
             <span className="text-xl font-bold tracking-tight text-slate-800">
-              First Choice
+              First Choice Education
             </span>
           </Link>
 
@@ -153,7 +153,7 @@ const Navbar = () => {
                     <div className="bg-primary p-1.5 rounded-lg">
                       <BookOpen className="w-4 h-4 text-white" />
                     </div>
-                    <span className="text-sm font-bold text-slate-800">First Choice</span>
+                    <span className="text-sm font-bold text-slate-800">First Choice Education</span>
                 </div>
                 <button onClick={() => setIsOpen(false)} className="p-2 text-slate-400">
                    <X className="w-5 h-5" />

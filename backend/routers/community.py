@@ -242,7 +242,9 @@ def invite_to_community(
         )
     ).first()
     
-    if not membership or membership.role not in ["owner", "moderator"]:
+    is_authorized = current_user.role == "admin" or (membership and membership.role in ["owner", "moderator"])
+    
+    if not is_authorized:
         raise HTTPException(status_code=403, detail="Only admins can invite members")
         
     # Create membership as 'active' (since it's an invite) or 'invited'
@@ -280,7 +282,9 @@ def get_join_requests(
         )
     ).first()
     
-    if not membership or membership.role not in ["owner", "moderator"]:
+    is_authorized = current_user.role == "admin" or (membership and membership.role in ["owner", "moderator"])
+    
+    if not is_authorized:
         raise HTTPException(status_code=403, detail="Not authorized")
         
     statement = (
@@ -307,7 +311,9 @@ def approve_join_request(
         )
     ).first()
     
-    if not admin_membership or admin_membership.role not in ["owner", "moderator"]:
+    is_authorized = current_user.role == "admin" or (admin_membership and admin_membership.role in ["owner", "moderator"])
+    
+    if not is_authorized:
         raise HTTPException(status_code=403, detail="Not authorized")
         
     member = db.exec(

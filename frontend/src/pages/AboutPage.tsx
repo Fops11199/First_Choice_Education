@@ -40,7 +40,7 @@ const AboutPage = () => {
             animate={{ opacity: 1, y: 0 }}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-widest mb-6"
           >
-            <BookOpen className="w-4 h-4" /> About First Choice
+            <BookOpen className="w-4 h-4" /> About First Choice Education
           </motion.div>
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}

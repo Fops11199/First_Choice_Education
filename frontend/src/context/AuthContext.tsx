@@ -65,7 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await api.post('/auth/login', formData, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
-      
+
       const { access_token, user: userData } = response.data;
       localStorage.setItem('token', access_token);
       setUser(userData);
@@ -109,7 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.clear(); // Clear everything to be safe
     setUser(null);
     setIsAuthenticated(false);
-    
+
     // Use window.location to force a full state reset and clean redirect
     window.location.href = '/login';
   };
@@ -117,8 +117,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateUser = (data: any) => setUser(data);
 
   return (
-    <AuthContext.Provider value={{ 
-      user, loading, error, login, register, logout, updateUser, clearError, isAuthenticated 
+    <AuthContext.Provider value={{
+      user, loading, error, login, register, logout, updateUser, clearError, isAuthenticated
     }}>
       {children}
     </AuthContext.Provider>

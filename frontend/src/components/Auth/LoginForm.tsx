@@ -49,7 +49,7 @@ const LoginForm = () => {
             <div className="bg-primary p-2.5 rounded-lg">
               <BookOpen className="w-6 h-6 text-white" />
             </div>
-            <span className="text-white text-xl font-black tracking-tight">First Choice</span>
+            <span className="text-white text-xl font-black tracking-tight">First Choice Education</span>
           </Link>
 
           <h2 className="text-4xl font-black text-white leading-tight mb-4">
@@ -84,7 +84,7 @@ const LoginForm = () => {
           <div className="bg-primary p-2 rounded-lg">
             <BookOpen className="w-5 h-5 text-white" />
           </div>
-          <span className="text-slate-800 text-lg font-black">First Choice</span>
+          <span className="text-slate-800 text-lg font-black">First Choice Education</span>
         </Link>
 
         <motion.div
