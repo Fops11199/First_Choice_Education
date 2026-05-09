@@ -3,12 +3,14 @@ import api from '../../api/api';
 import { Star, Check, Trash2, Loader2, ShieldCheck, User, Globe, Clock, ArrowLeftRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import ConfirmModal from '../../components/ui/ConfirmModal';
 
 const AdminTestimonials = () => {
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'pending' | 'live'>('pending');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const fetchReviews = async (status: 'pending' | 'live') => {
     setLoading(true);
@@ -55,12 +57,17 @@ const AdminTestimonials = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to permanently delete this review?')) return;
-    setActionLoading(id);
+    setDeleteTarget(id);
+  };
+
+  const confirmDeleteAction = async () => {
+    if (!deleteTarget) return;
+    setActionLoading(deleteTarget);
     try {
-      await api.delete(`/admin/reviews/${id}`);
+      await api.delete(`/admin/reviews/${deleteTarget}`);
       toast.success("Deleted permanently");
-      setReviews(reviews.filter(r => r.id !== id));
+      setReviews(reviews.filter(r => r.id !== deleteTarget));
+      setDeleteTarget(null);
     } catch (err) {
       toast.error("Delete Failed");
     } finally {
@@ -110,9 +117,9 @@ const AdminTestimonials = () => {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white border border-blue-50 border-dashed rounded-[3rem] p-24 text-center shadow-sm mx-4"
+          className="bg-white border border-blue-50 border-dashed rounded-3xl p-24 text-center shadow-sm mx-4"
         >
-          <div className="w-24 h-24 bg-blue-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 text-primary shadow-inner">
+          <div className="w-24 h-24 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-8 text-primary shadow-inner">
             {activeTab === 'pending' ? <ShieldCheck className="w-12 h-12" /> : <Globe className="w-12 h-12 text-slate-300" />}
           </div>
           <h3 className="text-xl font-bold text-slate-800 mb-2">{activeTab === 'pending' ? 'All Caught Up!' : 'No Live Reviews Yet'}</h3>
@@ -132,7 +139,7 @@ const AdminTestimonials = () => {
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-                className="bg-white border border-blue-50 rounded-[2.5rem] p-8 shadow-sm hover:shadow-xl hover:shadow-blue-100/20 transition-all duration-300 flex flex-col relative overflow-hidden group"
+                className="bg-white border border-blue-50 rounded-2xl p-8 shadow-sm hover:shadow-xl hover:shadow-blue-100/20 transition-all duration-300 flex flex-col relative overflow-hidden group"
               >
                 <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors"></div>
                 
@@ -202,6 +209,18 @@ const AdminTestimonials = () => {
           </AnimatePresence>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmDeleteAction}
+        isLoading={actionLoading === deleteTarget}
+        title="Burn Testimonial?"
+        message="Are you sure you want to permanently delete this student feedback? This action cannot be undone."
+        confirmText="Yes, Burn It"
+        cancelText="Keep Review"
+        type="danger"
+      />
     </div>
   );
 };

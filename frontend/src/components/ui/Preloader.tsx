@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
+import logo from '../../assets/logo.png';
 
 const messages = [
   "Sharpening the pencils...",
@@ -41,7 +42,7 @@ const Preloader = () => {
         />
 
         {/* Central Icon Animation */}
-        <div className="relative bg-primary p-8 rounded-[2.5rem] shadow-2xl shadow-primary/30">
+        <div className="relative bg-white p-10 rounded-3xl shadow-xl border border-slate-100">
           <motion.div
             animate={{ 
               scale: [1, 1.1, 1],
@@ -52,8 +53,9 @@ const Preloader = () => {
               repeat: Infinity, 
               ease: "easeInOut" 
             }}
+            className="flex items-center justify-center"
           >
-            <BookOpen className="w-12 h-12 text-white" />
+            <img src={logo} alt="Logo" className="w-24 h-24 object-contain" />
           </motion.div>
           
           <motion.div
@@ -61,16 +63,19 @@ const Preloader = () => {
             transition={{ duration: 2, repeat: Infinity }}
             className="absolute -top-2 -right-2"
           >
-            <Sparkles className="w-6 h-6 text-primary-light" />
+            <Sparkles className="w-6 h-6 text-primary" />
           </motion.div>
         </div>
       </div>
 
       {/* Message and Progress */}
       <div className="mt-20 text-center">
-        <h2 className="text-xl font-black text-slate-900 tracking-tight mb-3">
+        <h2 className="text-xl font-black text-slate-900 tracking-tight">
           First Choice Education
         </h2>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">
+          sponsored by Apostle JOHN CHi
+        </p>
         
         <div className="h-6 overflow-hidden">
           <AnimatePresence mode="wait">

@@ -29,10 +29,14 @@ const PaperPage = lazy(() => import('./pages/PaperPage'));
 const CommunityPage = lazy(() => import('./pages/CommunityPage'));
 const CommunityGroupPage = lazy(() => import('./pages/CommunityGroupPage'));
 const ThreadDetailPage = lazy(() => import('./pages/ThreadDetail'));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
+const TermsPage = lazy(() => import('./pages/TermsPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
 
 // Dashboard Pages
 const StudentDashboard = lazy(() => import('./pages/Dashboard'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const HelpPage = lazy(() => import('./pages/HelpPage'));
 
 // Admin Pages
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
@@ -40,6 +44,12 @@ const AdminSubjects = lazy(() => import('./pages/admin/AdminSubjects'));
 const AdminPapers = lazy(() => import('./pages/admin/AdminPapers'));
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminTestimonials = lazy(() => import('./pages/admin/AdminTestimonials'));
+const AdminLevels = lazy(() => import('./pages/admin/AdminLevels'));
+const AdminAdverts = lazy(() => import('./pages/admin/AdminAdverts'));
+
+// Universities Page
+const UniversitiesPage = lazy(() => import('./pages/UniversitiesPage'));
+const UniversityDetailPage = lazy(() => import('./pages/UniversityDetailPage'));
 
 // Loading Fallback
 const PageLoader = () => (
@@ -78,6 +88,9 @@ function App() {
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/levels" element={<GCELevelsPage />} />
                 <Route path="/about" element={<AboutPage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/terms" element={<TermsPage />} />
+                <Route path="/contact" element={<ContactPage />} />
               </Route>
 
               {/* Clean Layout (No Footer) - Auth & Critical Interaction */}
@@ -103,6 +116,9 @@ function App() {
                 <Route path="/dashboard" element={<StudentDashboard />} />
                 <Route path="/tutor_dashboard" element={<TutorDashboard />} />
                 <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/help" element={<HelpPage />} />
+                <Route path="/universities" element={<UniversitiesPage />} />
+                <Route path="/universities/:advertId" element={<UniversityDetailPage />} />
               </Route>
 
               {/* Admin Routes */}
@@ -112,6 +128,8 @@ function App() {
                 <Route path="subjects/:subjectId/papers" element={<AdminPapers />} />
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="testimonials" element={<AdminTestimonials />} />
+                <Route path="levels" element={<AdminLevels />} />
+                <Route path="adverts" element={<AdminAdverts />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />

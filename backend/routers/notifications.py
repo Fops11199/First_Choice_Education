@@ -43,14 +43,15 @@ def mark_all_notifications_read(
     db: Session = Depends(get_session),
     current_user: User = Depends(require_user)
 ):
-    """Mark all notifications for the current user as read."""
-    statement = select(Notification).where(
-        Notification.user_id == current_user.id,
-        Notification.is_read == False
+    """Mark all notifications for the current user as read (Bulk Update)."""
+    from sqlalchemy import update
+    
+    statement = (
+        update(Notification)
+        .where(Notification.user_id == current_user.id)
+        .where(Notification.is_read == False)
+        .values(is_read=True)
     )
-    unread = db.exec(statement).all()
-    for n in unread:
-        n.is_read = True
-        db.add(n)
+    db.execute(statement)
     db.commit()
-    return {"message": f"{len(unread)} notifications marked as read"}
+    return {"message": "All notifications marked as read"}

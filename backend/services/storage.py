@@ -24,9 +24,9 @@ class StorageService:
                 config=Config(signature_version='s3v4'),
                 region_name='auto'
             )
-            print("🚀 StorageService: Cloudflare R2 Active")
+            print("StorageService: Cloudflare R2 Active")
         else:
-            print("📁 StorageService: Using Local Storage (R2 Credentials Missing)")
+            print("StorageService: Using Local Storage (R2 Credentials Missing)")
 
     async def upload_file(self, file_obj, filename: str) -> str:
         """

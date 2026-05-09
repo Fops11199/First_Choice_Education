@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 import {
-  BookOpen, User, Mail, Lock, Eye, EyeOff,
-  Phone, GraduationCap, ArrowRight, Loader2, AlertCircle, CheckCircle2
+  User, Mail, Lock, Eye, EyeOff,
+  Phone, GraduationCap, ArrowRight, Loader2, AlertCircle, CheckCircle2, ChevronDown, MapPin, Building2
 } from 'lucide-react';
+import api from '../../api/api';
 import { toast } from 'sonner';
+import logo from '../../assets/logo.png';
 
 const RegisterForm = () => {
   const [fullName, setFullName] = useState('');
@@ -14,10 +16,24 @@ const RegisterForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [level, setLevel] = useState<'O-Level' | 'A-Level'>('O-Level');
+  const [level, setLevel] = useState<string>('O-Level');
+  const [region, setRegion] = useState<string>('Centre');
+  const [currentSchool, setCurrentSchool] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [formError, setFormError] = useState('');
+  const [dbLevels, setDbLevels] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.get('/content/levels')
+      .then(response => {
+        setDbLevels(response.data);
+        if (response.data.length > 0 && level === 'O-Level') {
+          setLevel(response.data[0].name);
+        }
+      })
+      .catch(err => console.error("Failed to fetch levels:", err));
+  }, []);
 
   const { register, loading, error, clearError } = useAuth();
   const navigate = useNavigate();
@@ -39,7 +55,7 @@ const RegisterForm = () => {
     // Silently prepend +237 for Cameroon
     const whatsappNumber = phone.trim() ? `+237${phone.trim().replace(/^(\+237|237)/, '')}` : undefined;
 
-    const success = await register(fullName, email, password, whatsappNumber, level);
+    const success = await register(fullName, email, password, whatsappNumber, level, region, currentSchool);
     if (success) {
       toast.success('Welcome to First Choice Education!', { description: "Your account is ready. Let's get started!" });
       navigate('/dashboard');
@@ -58,10 +74,15 @@ const RegisterForm = () => {
 
         <div className="relative z-10">
           <Link to="/" className="flex items-center gap-3 mb-16">
-            <div className="bg-primary p-2.5 rounded-lg">
-              <BookOpen className="w-6 h-6 text-white" />
+            <div className="p-1">
+              <img src={logo} alt="Logo" className="w-12 h-12 object-contain" />
             </div>
-            <span className="text-white text-xl font-black tracking-tight">First Choice Education</span>
+            <div className="flex flex-col -space-y-1">
+              <span className="text-white text-xl font-black tracking-tight">First Choice Education</span>
+              <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">
+                sponsored by Apostle JOHN CHi
+              </span>
+            </div>
           </Link>
 
           <h2 className="text-4xl font-black text-white leading-tight mb-4">
@@ -94,10 +115,15 @@ const RegisterForm = () => {
       <div className="flex-1 flex flex-col justify-center items-center px-0 sm:px-6 py-12 bg-white overflow-y-auto">
         {/* Mobile logo */}
         <Link to="/" className="flex items-center gap-2.5 lg:hidden mb-8">
-          <div className="bg-primary p-2 rounded-lg">
-            <BookOpen className="w-5 h-5 text-white" />
+          <div className="p-1">
+            <img src={logo} alt="Logo" className="w-10 h-10 object-contain" />
           </div>
-          <span className="text-slate-800 text-lg font-black">First Choice Education</span>
+          <div className="flex flex-col -space-y-1 text-left">
+            <span className="text-slate-800 text-lg font-black leading-tight">First Choice Education</span>
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+              sponsored by Apostle JOHN CHi
+            </span>
+          </div>
         </Link>
 
         <motion.div
@@ -228,27 +254,66 @@ const RegisterForm = () => {
               </div>
             </div>
 
-            {/* GCE Level */}
+            {/* GCE Level & Region */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <GraduationCap className="w-3 h-3" /> GCE Level
+                </label>
+                <div className="relative group">
+                  <select 
+                    value={level}
+                    onChange={(e) => setLevel(e.target.value)}
+                    className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-slate-800 font-medium text-sm appearance-none cursor-pointer"
+                  >
+                    {dbLevels.map((l: any) => (
+                      <option key={l.id} value={l.name}>{l.name}</option>
+                    ))}
+                    {dbLevels.length === 0 && (
+                      <>
+                        <option value="O-Level">Ordinary Level (O-Level)</option>
+                        <option value="A-Level">Advanced Level (A-Level)</option>
+                      </>
+                    )}
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none group-focus-within:rotate-180 transition-transform" />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <MapPin className="w-3 h-3" /> Region
+                </label>
+                <div className="relative group">
+                  <select 
+                    value={region}
+                    onChange={(e) => setRegion(e.target.value)}
+                    className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-slate-800 font-medium text-sm appearance-none cursor-pointer"
+                  >
+                    {[
+                      'Adamawa', 'Centre', 'East', 'Far North', 'Littoral', 
+                      'North', 'Northwest', 'South', 'Southwest', 'West'
+                    ].map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none group-focus-within:rotate-180 transition-transform" />
+                </div>
+              </div>
+            </div>
+
+            {/* Current School */}
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                <GraduationCap className="w-3 h-3" /> GCE Level
+                <Building2 className="w-3 h-3" /> Current School (Optional)
               </label>
-              <div className="grid grid-cols-2 gap-3">
-                {(['O-Level', 'A-Level'] as const).map((l) => (
-                  <button
-                    key={l}
-                    type="button"
-                    onClick={() => setLevel(l)}
-                    className={`py-3.5 rounded-lg text-sm font-bold transition-all border ${level === l
-                        ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
-                        : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-primary/40'
-                      }`}
-                  >
-                    {l === 'O-Level' ? 'Ordinary Level' : 'Advanced Level'}
-                    <span className="block text-[10px] font-semibold opacity-70 mt-0.5">{l}</span>
-                  </button>
-                ))}
-              </div>
+              <input
+                type="text"
+                value={currentSchool}
+                onChange={(e) => setCurrentSchool(e.target.value)}
+                placeholder="e.g. GBHS Bamenda"
+                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all text-slate-800 font-medium placeholder:text-slate-300 text-sm"
+              />
             </div>
 
             {/* Submit */}

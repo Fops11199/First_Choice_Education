@@ -9,20 +9,31 @@ import SEO from '../components/SEO';
 const SubjectsPage = () => {
   const { user } = useAuth();
   const [subjects, setSubjects] = useState<any[]>([]);
+  const [levels, setLevels] = useState<any[]>([]);
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [enrollingId, setEnrollingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedLevel, setSelectedLevel] = useState<string>(user?.level || "O-Level");
+  const [selectedLevel, setSelectedLevel] = useState<string>(user?.level || "");
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [subRes, enrolRes] = await Promise.all([
+        const [subRes, levelRes, enrolRes] = await Promise.all([
           api.get('/content/subjects'),
+          api.get('/content/levels'),
           user?.role === 'student' ? api.get('/students/me/enrollments') : Promise.resolve({ data: [] })
         ]);
         setSubjects(subRes.data);
+        setLevels(levelRes.data);
+        
+        // If user has a level, use it, otherwise use the first level found
+        if (user?.level) {
+          setSelectedLevel(user.level);
+        } else if (levelRes.data.length > 0) {
+          setSelectedLevel(levelRes.data[0].name);
+        }
+
         if (user?.role === 'student') {
           setEnrollments(enrolRes.data);
         }
@@ -79,20 +90,17 @@ const SubjectsPage = () => {
           <p className="text-sm md:text-base text-slate-600 font-medium leading-relaxed">Browse the complete archive of subjects for the selected GCE level.</p>
           
           {/* Level Toggle for Admins or users without a set level */}
-          {(!user?.level || user.role === 'admin') && (
-            <div className="flex gap-2 mt-6">
-              <button 
-                onClick={() => setSelectedLevel("O-Level")}
-                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${selectedLevel === "O-Level" ? "bg-primary text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
-              >
-                O-Level
-              </button>
-              <button 
-                onClick={() => setSelectedLevel("A-Level")}
-                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${selectedLevel === "A-Level" ? "bg-primary text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
-              >
-                A-Level
-              </button>
+          {(!user?.level || user.role === 'admin') && levels.length > 0 && (
+            <div className="flex gap-2 mt-6 overflow-x-auto pb-2 no-scrollbar">
+              {levels.map((level) => (
+                <button 
+                  key={level.id}
+                  onClick={() => setSelectedLevel(level.name)}
+                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${selectedLevel === level.name ? "bg-primary text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+                >
+                  {level.name}
+                </button>
+              ))}
             </div>
           )}
         </div>

@@ -31,6 +31,7 @@ const AdminDashboard = () => {
     total_subjects: 0,
     total_papers: 0,
     total_videos: 0,
+    papers_with_video: 0,
     new_signups_week: 0,
     student_trend: "...",
     efficiency: 0,
@@ -212,7 +213,10 @@ const AdminDashboard = () => {
                     <AnimatedCounter value={stats.efficiency} />
                     <span className="text-2xl opacity-50">%</span>
                   </p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-2">Video Coverage</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-2">Coverage</p>
+                  <p className="text-[11px] font-bold text-primary mt-1">
+                    {stats.papers_with_video} / {stats.total_papers} Papers
+                  </p>
                 </div>
               </div>
             </div>
@@ -307,11 +311,7 @@ const RecentSubjectRow = ({ name, level, papers, onEdit }: any) => (
       </div>
     </td>
     <td className="px-8 py-6">
-      <span className={`text-[10px] font-bold px-4 py-1.5 rounded-lg border uppercase tracking-[0.1em] ${
-        level === 'A-Level' 
-          ? 'bg-blue-50 text-primary border-blue-100' 
-          : 'bg-white text-primary border-blue-100'
-      }`}>
+      <span className="text-[10px] font-bold px-4 py-1.5 rounded-lg border border-blue-100 bg-blue-50/30 text-primary uppercase tracking-[0.1em]">
         {level}
       </span>
     </td>

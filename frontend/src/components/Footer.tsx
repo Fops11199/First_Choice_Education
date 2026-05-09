@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Share2, MessageCircle, Globe, Mail, Phone, MapPin } from 'lucide-react';
+import { Share2, MessageCircle, Globe, Mail, Phone, MapPin } from 'lucide-react';
+import logo from '../assets/logo.png';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -12,10 +13,15 @@ const Footer = () => {
           {/* Brand Column */}
           <div className="space-y-6">
             <Link to="/" className="flex items-center gap-3">
-              <div className="bg-primary p-2 rounded-xl">
-                <BookOpen className="w-6 h-6 text-white" />
+              <div className="p-1">
+                <img src={logo} alt="Logo" className="w-12 h-12 object-contain" />
               </div>
-              <span className="text-xl font-black tracking-tight uppercase">First Choice Education</span>
+              <div className="flex flex-col -space-y-1">
+                <span className="text-xl font-black tracking-tight uppercase">First Choice Education</span>
+                <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">
+                  sponsored by Apostle JOHN CHi
+                </span>
+              </div>
             </Link>
             <p className="text-white/60 font-medium leading-relaxed">
               Empowering Cameroonian students to achieve excellence in their GCE exams through expert-led video solutions and a supportive community.

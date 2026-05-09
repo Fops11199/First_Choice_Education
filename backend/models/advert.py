@@ -10,4 +10,11 @@ class Advert(SQLModel, table=True):
     target_url: str
     is_active: bool = Field(default=True)
     display_order: int = Field(default=0)
+    description: Optional[str] = None
+    available_regions: Optional[str] = None
+    location: Optional[str] = None
+    programs: Optional[str] = None
+    contact_email: Optional[str] = None
+    contact_phone: Optional[str] = None
+    institution_type: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)

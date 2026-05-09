@@ -10,7 +10,9 @@ import {
   Search, 
   Menu,
   X,
-  Star
+  Star,
+  Layers,
+  Building2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import NotificationMenu from '../components/NotificationMenu';
@@ -35,9 +37,10 @@ const AdminLayout = () => {
   const navItems = [
     { name: 'Dashboard', path: '/admin_dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
     { name: 'Subjects', path: '/admin_dashboard/subjects', icon: <BookOpen className="w-5 h-5" /> },
+    { name: 'Levels', path: '/admin_dashboard/levels', icon: <Layers className="w-5 h-5" /> },
     { name: 'Users', path: '/admin_dashboard/users', icon: <Users className="w-5 h-5" /> },
+    { name: 'Universities', path: '/admin_dashboard/adverts', icon: <Building2 className="w-5 h-5" /> },
     { name: 'Testimonials', path: '/admin_dashboard/testimonials', icon: <Star className="w-5 h-5" /> },
-    { name: 'Settings', path: '/admin_dashboard/settings', icon: <Settings className="w-5 h-5" /> },
   ];
 
   return (
@@ -186,7 +189,7 @@ const AdminLayout = () => {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        <main className="flex-1 p-2 sm:p-6 lg:p-8 overflow-y-auto">
           <Outlet />
         </main>
       </div>

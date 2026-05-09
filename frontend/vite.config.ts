@@ -8,6 +8,9 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  optimizeDeps: {
+    include: ['pdfjs-dist'],
+  },
   server: {
     host: true, // Listen on all network interfaces
     port: 5173,

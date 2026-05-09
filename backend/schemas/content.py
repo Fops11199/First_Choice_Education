@@ -50,10 +50,12 @@ class SubjectResponseSchema(SubjectBaseSchema):
         from_attributes = True
 
 class LevelBaseSchema(BaseModel):
-    name: str = Field(pattern="^(O-Level|A-Level)$")
+    name: str
 
 class LevelResponseSchema(LevelBaseSchema):
     id: uuid.UUID
+    is_deleted: bool = False
+    deleted_at: Optional[datetime] = None
     subjects: List[SubjectResponseSchema] = []
 
     class Config:

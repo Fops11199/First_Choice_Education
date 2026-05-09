@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FileText, ArrowRight, BookOpen, Loader2, ChevronLeft } from 'lucide-react';
+import { FileText, ArrowRight, BookOpen, Loader2, ChevronLeft, ChevronDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/api';
@@ -12,6 +12,7 @@ const SubjectPapersPage = () => {
   const [isEnrolled, setIsEnrolled] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
+  const [selectedYear, setSelectedYear] = useState<number | 'all'>('all');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -38,6 +39,18 @@ const SubjectPapersPage = () => {
     };
     fetchData();
   }, [subjectId, user]);
+
+  useEffect(() => {
+    if (data?.papers?.length > 0 && selectedYear === 'all') {
+      const maxYear = Math.max(...data.papers.map((p: any) => p.year));
+      setSelectedYear(maxYear);
+    }
+  }, [data]);
+
+  const years = data ? Array.from(new Set(data.papers.map((p: any) => p.year))).sort((a: any, b: any) => b - a) as number[] : [];
+  const filteredPapers = selectedYear === 'all' 
+    ? (data?.papers || []) 
+    : (data?.papers || []).filter((p: any) => p.year === selectedYear);
 
   const handleEnroll = async () => {
     if (!subjectId || user?.role !== 'student') return;
@@ -95,6 +108,28 @@ const SubjectPapersPage = () => {
         </p>
       </div>
 
+      {/* Year Selector */}
+      {data.papers.length > 0 && isEnrolled && (
+        <div className="mb-8">
+          <div className="flex flex-col gap-3">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Filter by Year</p>
+            <div className="relative group w-full md:w-64">
+              <select 
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+                className="w-full pl-5 pr-12 py-3.5 bg-white border border-slate-200 hover:border-primary/30 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all appearance-none cursor-pointer shadow-sm"
+              >
+                <option value="all">ALL YEARS</option>
+                {years.map((year) => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none group-focus-within:rotate-180 transition-transform" />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {data.papers.length === 0 ? (
           <div className="col-span-full py-20 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
@@ -121,8 +156,13 @@ const SubjectPapersPage = () => {
               {enrolling ? 'Enrolling...' : 'Enroll Now for Free'}
             </button>
           </div>
+        ) : filteredPapers.length === 0 ? (
+          <div className="col-span-full py-20 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+            <h3 className="text-lg font-bold text-slate-800 mb-2">No papers found for {selectedYear}</h3>
+            <p className="text-sm text-slate-500">Try selecting a different year.</p>
+          </div>
         ) : (
-          data.papers.map((paper: any, i: number) => (
+          filteredPapers.map((paper: any, i: number) => (
             <motion.div
               key={paper.id}
               initial={{ opacity: 0, y: 20 }}

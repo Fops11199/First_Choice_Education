@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
-import { BookOpen, Mail, Lock, ArrowRight, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import logo from '../../assets/logo.png';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
@@ -46,10 +47,15 @@ const LoginForm = () => {
 
         <div className="relative z-10">
           <Link to="/" className="flex items-center gap-3 mb-16">
-            <div className="bg-primary p-2.5 rounded-lg">
-              <BookOpen className="w-6 h-6 text-white" />
+            <div className="p-1">
+              <img src={logo} alt="Logo" className="w-12 h-12 object-contain" />
             </div>
-            <span className="text-white text-xl font-black tracking-tight">First Choice Education</span>
+            <div className="flex flex-col -space-y-1">
+              <span className="text-white text-xl font-black tracking-tight">First Choice Education</span>
+              <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">
+                sponsored by Apostle JOHN CHi
+              </span>
+            </div>
           </Link>
 
           <h2 className="text-4xl font-black text-white leading-tight mb-4">
@@ -81,10 +87,15 @@ const LoginForm = () => {
       <div className="flex-1 flex flex-col justify-center items-center px-0 sm:px-6 py-12 bg-white">
         {/* Mobile logo */}
         <Link to="/" className="flex items-center gap-2.5 lg:hidden mb-8">
-          <div className="bg-primary p-2 rounded-lg">
-            <BookOpen className="w-5 h-5 text-white" />
+          <div className="p-1">
+            <img src={logo} alt="Logo" className="w-10 h-10 object-contain" />
           </div>
-          <span className="text-slate-800 text-lg font-black">First Choice Education</span>
+          <div className="flex flex-col -space-y-1 text-left">
+            <span className="text-slate-800 text-lg font-black leading-tight">First Choice Education</span>
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+              sponsored by Apostle JOHN CHi
+            </span>
+          </div>
         </Link>
 
         <motion.div

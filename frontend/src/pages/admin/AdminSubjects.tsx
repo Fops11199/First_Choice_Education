@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, BookOpen, Edit2, Trash2, Loader2, FileText, ChevronRight, ArrowUpRight, Filter } from 'lucide-react';
+import { Search, Plus, BookOpen, Edit2, Trash2, Loader2, FileText, ChevronRight, ArrowUpRight, Filter, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import api from '../../api/api';
+import ConfirmModal from '../../components/ui/ConfirmModal';
 
 const AdminSubjects = () => {
   const navigate = useNavigate();
@@ -17,6 +18,8 @@ const AdminSubjects = () => {
   const [editingSubject, setEditingSubject] = useState<any>(null);
   const [formData, setFormData] = useState({ name: '', level_id: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string, name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchLevels();
@@ -86,13 +89,21 @@ const AdminSubjects = () => {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`Delete ${name}? All associated papers will be affected.`)) return;
+    setDeleteTarget({ id, name });
+  };
+
+  const confirmDeleteAction = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
     try {
-      await api.delete(`/admin/subjects/${id}`);
+      await api.delete(`/admin/subjects/${deleteTarget.id}`);
       toast.success("Subject Removed");
+      setDeleteTarget(null);
       fetchSubjects();
     } catch (err) {
       toast.error("Delete Failed");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -124,30 +135,18 @@ const AdminSubjects = () => {
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
             <Filter className="w-3 h-3" /> Select GCE Level
           </p>
-          <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-none no-scrollbar">
-            <button
-              onClick={() => setSelectedLevelId('all')}
-              className={`whitespace-nowrap px-6 py-3 rounded-xl text-xs font-semibold uppercase tracking-widest border transition-all ${
-                selectedLevelId === 'all' 
-                ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' 
-                : 'bg-white text-slate-400 border-blue-50 hover:border-primary/30 hover:text-primary'
-              }`}
+          <div className="relative group w-full md:w-64">
+            <select 
+              value={selectedLevelId}
+              onChange={(e) => setSelectedLevelId(e.target.value)}
+              className="w-full pl-5 pr-12 py-3.5 bg-white border border-blue-50 hover:border-primary/30 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all appearance-none cursor-pointer shadow-sm"
             >
-              All Levels
-            </button>
-            {levels.map((level) => (
-              <button
-                key={level.id}
-                onClick={() => setSelectedLevelId(level.id)}
-                className={`whitespace-nowrap px-6 py-3 rounded-xl text-xs font-semibold uppercase tracking-widest border transition-all ${
-                  selectedLevelId === level.id 
-                  ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' 
-                  : 'bg-white text-slate-400 border-blue-50 hover:border-primary/30 hover:text-primary'
-                }`}
-              >
-                {level.name}
-              </button>
-            ))}
+              <option value="all">ALL LEVELS</option>
+              {levels.map((level) => (
+                <option key={level.id} value={level.id}>{level.name.toUpperCase()}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none group-focus-within:rotate-180 transition-transform" />
           </div>
         </div>
 
@@ -158,7 +157,7 @@ const AdminSubjects = () => {
             placeholder="Search for a subject (e.g. Mathematics)..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-14 pr-6 py-5 bg-white border border-blue-50 rounded-[2rem] text-base font-medium focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all shadow-sm"
+            className="w-full pl-14 pr-32 py-5 bg-white border border-blue-50 rounded-2xl text-base font-medium focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all shadow-sm"
           />
           <div className="absolute right-6 top-1/2 -translate-y-1/2 px-3 py-1 bg-blue-50 text-blue-400 text-[10px] font-bold rounded-lg uppercase tracking-widest">
             {filteredSubjects.length} Found
@@ -174,7 +173,7 @@ const AdminSubjects = () => {
             <p className="mt-6 text-slate-400 font-semibold text-sm uppercase tracking-widest">Loading Subject Base...</p>
           </div>
         ) : filteredSubjects.length === 0 ? (
-          <div className="bg-white rounded-[3rem] p-20 text-center border border-blue-50">
+          <div className="bg-white rounded-3xl p-20 text-center border border-blue-50">
             <div className="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-blue-200">
               <Search className="w-10 h-10" />
             </div>
@@ -191,7 +190,7 @@ const AdminSubjects = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   key={sub.id}
-                  className="bg-white border border-blue-50 rounded-[2.5rem] p-6 shadow-sm hover:shadow-xl hover:shadow-blue-100/30 transition-all group"
+                  className="bg-white border border-blue-50 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:shadow-blue-100/30 transition-all group"
                 >
                   <div className="flex items-start justify-between mb-6">
                     <div className="flex items-center gap-4">
@@ -241,11 +240,11 @@ const AdminSubjects = () => {
         {isModalOpen && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsModalOpen(false)} />
-            <motion.div initial={{ scale: 0.9, opacity: 0, y: 40 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 40 }} className="relative bg-white rounded-[3rem] p-10 w-full max-w-xl shadow-2xl border border-blue-50 overflow-hidden">
+            <motion.div initial={{ scale: 0.9, opacity: 0, y: 40 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 40 }} className="relative bg-white rounded-3xl p-10 w-full max-w-xl shadow-2xl border border-blue-50 overflow-hidden">
               <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl"></div>
               
               <div className="relative z-10">
-                <div className="w-16 h-16 bg-blue-50 text-primary rounded-[1.5rem] flex items-center justify-center mb-8 shadow-inner">
+                <div className="w-16 h-16 bg-blue-50 text-primary rounded-2xl flex items-center justify-center mb-8 shadow-inner">
                   <BookOpen className="w-8 h-8" />
                 </div>
                 
@@ -286,6 +285,18 @@ const AdminSubjects = () => {
           </div>
         )}
       </AnimatePresence>
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmDeleteAction}
+        isLoading={isDeleting}
+        title="Delete Subject?"
+        message={`Are you sure you want to delete "${deleteTarget?.name}"? This will also affect all papers and solutions linked to this subject.`}
+        confirmText="Yes, Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

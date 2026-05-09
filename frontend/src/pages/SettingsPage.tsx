@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { User, Phone, GraduationCap, Mail, Save, Lock } from 'lucide-react';
+import { User, Phone, GraduationCap, Mail, Save, Lock, MapPin, Building2 } from 'lucide-react';
 import api from '../api/api';
 
 const SettingsPage = () => {
@@ -13,7 +13,9 @@ const SettingsPage = () => {
   const [profileData, setProfileData] = useState({
     fullName: user?.full_name || '',
     whatsappNumber: user?.whatsapp_number || '',
-    level: user?.level || 'O-Level'
+    level: user?.level || 'O-Level',
+    region: user?.region || 'Centre',
+    currentSchool: user?.current_school || ''
   });
   const [isProfileSaving, setIsProfileSaving] = useState(false);
   const [profileMessage, setProfileMessage] = useState({ type: '', text: '' });
@@ -47,6 +49,8 @@ const SettingsPage = () => {
       const payload: any = {
         full_name: profileData.fullName,
         whatsapp_number: profileData.whatsappNumber,
+        region: profileData.region,
+        current_school: profileData.currentSchool
       };
       
       // Only include level if user is a student
@@ -175,6 +179,26 @@ const SettingsPage = () => {
                   </select>
                 </div>
               )}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-2">
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 flex items-center gap-1.5"><MapPin className="w-3 h-3"/> Region</label>
+                <select 
+                  name="region" value={profileData.region} onChange={handleProfileChange}
+                  className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm appearance-none"
+                >
+                  {[
+                    'Adamawa', 'Centre', 'East', 'Far North', 'Littoral', 
+                    'North', 'Northwest', 'South', 'Southwest', 'West'
+                  ].map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 flex items-center gap-1.5"><Building2 className="w-3 h-3"/> Current School</label>
+                <Input name="currentSchool" value={profileData.currentSchool} onChange={handleProfileChange} placeholder="e.g. GBHS Bamenda" className="bg-slate-50 py-4" />
+              </div>
             </div>
 
             <div className="pt-8 mt-auto flex justify-end">

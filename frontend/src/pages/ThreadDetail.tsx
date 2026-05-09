@@ -137,7 +137,7 @@ const ThreadDetail = () => {
         <div className="flex-1 overflow-y-auto px-4 py-8 space-y-2 scroll-smooth custom-scrollbar">
             {/* Thread Header Hub */}
             <div className="flex justify-center mb-12">
-                <div className="bg-white border border-slate-100 px-8 py-6 rounded-[2rem] shadow-sm max-w-lg text-center relative overflow-hidden group">
+                <div className="bg-white border border-slate-100 px-8 py-6 rounded-2xl shadow-sm max-w-lg text-center relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                          <Shield className="w-20 h-20 text-primary" />
                     </div>

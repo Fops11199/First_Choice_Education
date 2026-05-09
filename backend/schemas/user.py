@@ -9,7 +9,9 @@ class UserCreateSchema(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8)
     whatsapp_number: Optional[str] = Field(None, max_length=20)
-    level: Optional[str] = Field(None, pattern="^(O-Level|A-Level)$")
+    level: Optional[str] = None
+    region: Optional[str] = None
+    current_school: Optional[str] = Field(None, max_length=150)
 
 class UserLoginSchema(BaseModel):
     email: EmailStr
@@ -23,6 +25,8 @@ class UserResponseSchema(BaseModel):
     whatsapp_number: Optional[str]
     role: str
     level: Optional[str]
+    region: Optional[str]
+    current_school: Optional[str]
     is_active: bool
     created_at: datetime
 

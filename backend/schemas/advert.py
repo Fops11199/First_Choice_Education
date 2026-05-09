@@ -9,6 +9,13 @@ class AdvertBase(BaseModel):
     target_url: str
     is_active: bool = True
     display_order: int = 0
+    description: Optional[str] = None
+    available_regions: Optional[str] = None
+    location: Optional[str] = None
+    programs: Optional[str] = None
+    contact_email: Optional[str] = None
+    contact_phone: Optional[str] = None
+    institution_type: Optional[str] = None
 
 class AdvertCreate(AdvertBase):
     pass
@@ -19,6 +26,13 @@ class AdvertUpdate(BaseModel):
     target_url: Optional[str] = None
     is_active: Optional[bool] = None
     display_order: Optional[int] = None
+    description: Optional[str] = None
+    available_regions: Optional[str] = None
+    location: Optional[str] = None
+    programs: Optional[str] = None
+    contact_email: Optional[str] = None
+    contact_phone: Optional[str] = None
+    institution_type: Optional[str] = None
 
 class AdvertRead(AdvertBase):
     id: uuid.UUID

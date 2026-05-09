@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-import { FileText, CheckCircle, Star, ArrowRight, BookOpen, Trophy, Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { FileText, ArrowRight, BookOpen, Trophy, Loader2, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/api';
 import AdvertBanner from '../components/AdvertBanner';
 
@@ -16,11 +16,10 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [loadingSubjects, setLoadingSubjects] = useState(false);
   
-  // Review state
-  const [review, setReview] = useState({ rating: 5, content: '' });
-  const [submittingReview, setSubmittingReview] = useState(false);
-  const [reviewSubmitted, setReviewSubmitted] = useState(false);
-  const [canShowReview, setCanShowReview] = useState(false);
+  const [enrollments, setEnrollments] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [enrollingMap, setEnrollingMap] = useState<{[key: string]: boolean}>({});
+  const [showUnenrollConfirm, setShowUnenrollConfirm] = useState<string | null>(null);
 
   useEffect(() => {
     if (user?.role === 'admin' || user?.role === 'tutor') {
@@ -29,13 +28,15 @@ const Dashboard = () => {
 
     const fetchDashboard = async () => {
       try {
-        const [statsRes, levelsRes] = await Promise.all([
+        const [statsRes, levelsRes, enrolRes] = await Promise.all([
           api.get('/students/me/dashboard'),
           api.get('/content/levels'),
+          api.get('/students/me/enrollments'),
           api.post('/students/me/streak/ping'),
         ]);
         setDashboardStats(statsRes.data);
         setLevels(levelsRes.data);
+        setEnrollments(enrolRes.data);
         
         // Auto-select user's level or first level
         if (levelsRes.data.length > 0) {
@@ -50,9 +51,7 @@ const Dashboard = () => {
     };
     fetchDashboard();
 
-    // Show review form after 2 minutes to prevent spam
-    const timer = setTimeout(() => setCanShowReview(true), 120000);
-    return () => clearTimeout(timer);
+
   }, [user]);
 
   // Fetch subjects when level changes
@@ -73,21 +72,41 @@ const Dashboard = () => {
     fetchSubjects();
   }, [selectedLevelId]);
 
-  const handleSubmitReview = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!review.content.trim()) return;
-    setSubmittingReview(true);
+  const handleEnroll = async (subjectId: string) => {
+    setEnrollingMap(prev => ({ ...prev, [subjectId]: true }));
     try {
-      await api.post('/reviews/', review);
-      setReviewSubmitted(true);
-      setReview({ rating: 5, content: '' });
+      await api.post('/students/me/enrollments', { subject_id: subjectId });
+      const res = await api.get('/students/me/enrollments');
+      setEnrollments(res.data);
+      // Also update dashboard stats
+      const statsRes = await api.get('/students/me/dashboard');
+      setDashboardStats(statsRes.data);
     } catch (err) {
-      console.error('Failed to submit review', err);
-      alert('Failed to submit review');
+      console.error('Failed to enroll:', err);
+      alert('Failed to enroll. Please try again.');
     } finally {
-      setSubmittingReview(false);
+      setEnrollingMap(prev => ({ ...prev, [subjectId]: false }));
     }
   };
+
+  const handleUnenroll = async (subjectId: string) => {
+    setEnrollingMap(prev => ({ ...prev, [subjectId]: true }));
+    try {
+      await api.delete(`/students/me/enrollments/${subjectId}`);
+      const res = await api.get('/students/me/enrollments');
+      setEnrollments(res.data);
+      const statsRes = await api.get('/students/me/dashboard');
+      setDashboardStats(statsRes.data);
+      setShowUnenrollConfirm(null);
+    } catch (err) {
+      console.error('Failed to unenroll:', err);
+      alert('Failed to unenroll.');
+    } finally {
+      setEnrollingMap(prev => ({ ...prev, [subjectId]: false }));
+    }
+  };
+
+  const filteredSubjects = subjects.filter(sub => sub.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
 
   if (user?.role === 'admin') {
@@ -122,22 +141,34 @@ const Dashboard = () => {
           <p className="text-slate-500 font-bold text-xs md:text-sm">Continuing GCE {user?.level || 'A-Level'} Preparation</p>
         </div>
         
-        <div className="flex flex-wrap gap-3 items-center">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2">Change Level:</p>
-          {levels.map((level) => (
-            <button
-              key={level.id}
-              onClick={() => setSelectedLevelId(level.id)}
-              className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all border ${
-                selectedLevelId === level.id
-                  ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
-                  : 'bg-white text-slate-500 border-slate-100 hover:border-primary/30'
-              }`}
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Change Level:</p>
+          <div className="relative group w-full sm:w-48">
+            <select
+              value={selectedLevelId}
+              onChange={(e) => setSelectedLevelId(e.target.value)}
+              className="w-full pl-4 pr-10 py-3 bg-white border border-slate-200 hover:border-primary/30 rounded-xl text-xs font-black uppercase tracking-widest text-slate-700 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all appearance-none cursor-pointer shadow-sm"
             >
-              {level.name}
-            </button>
-          ))}
+              {levels.map((level) => (
+                <option key={level.id} value={level.id}>{level.name}</option>
+              ))}
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-focus-within:rotate-180 transition-transform">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* Search Bar */}
+      <div className="mb-8">
+        <input 
+          type="text" 
+          placeholder="Search subjects..." 
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full px-6 py-4 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all shadow-sm"
+        />
       </div>
 
       {/* Main Grid */}
@@ -150,30 +181,56 @@ const Dashboard = () => {
               [1, 2, 3, 4].map(i => (
                 <div key={i} className="h-32 bg-slate-50 animate-pulse rounded-xl"></div>
               ))
-            ) : subjects.length > 0 ? (
-              subjects.map((subject) => (
-                <motion.div
-                  key={subject.id}
-                  whileHover={{ y: -4 }}
-                  className="bg-white border border-slate-100 rounded-xl p-6 flex flex-col justify-between gap-5 hover:border-primary/30 transition-all shadow-[0_8px_30px_-10px_rgba(0,0,0,0.03)] relative overflow-hidden group"
-                >
-                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary transform -translate-x-full group-hover:translate-x-0 transition-transform"></div>
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-slate-50 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors shrink-0">
-                      <BookOpen className="w-6 h-6" />
+            ) : filteredSubjects.length > 0 ? (
+              filteredSubjects.map((subject) => {
+                const isEnrolled = enrollments.some(e => e.subject_id === subject.id);
+                const isEnrolling = enrollingMap[subject.id];
+
+                return (
+                  <motion.div
+                    key={subject.id}
+                    whileHover={{ y: -4 }}
+                    className="bg-white border border-slate-100 rounded-xl p-6 flex flex-col justify-between gap-5 hover:border-primary/30 transition-all shadow-[0_8px_30px_-10px_rgba(0,0,0,0.03)] relative overflow-hidden group"
+                  >
+                    <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${isEnrolled ? 'bg-primary' : 'bg-slate-200'} transform -translate-x-full group-hover:translate-x-0 transition-transform`}></div>
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 rounded-lg ${isEnrolled ? 'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white' : 'bg-slate-50 text-slate-400'} flex items-center justify-center transition-colors shrink-0`}>
+                        <BookOpen className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-black text-slate-900 mb-0.5 group-hover:text-primary transition-colors line-clamp-1">{subject.name}</h3>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                          {subject.papers?.length ?? 0} Papers Available
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-base font-black text-slate-900 mb-0.5 group-hover:text-primary transition-colors line-clamp-1">{subject.name}</h3>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                        {subject.paper_count || 0} Papers Available
-                      </p>
-                    </div>
-                  </div>
-                  <Link to={`/subjects/${subject.id}/papers`} className="w-full bg-primary/5 text-primary py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-primary hover:text-white transition-all">
-                    Access Papers <ArrowRight className="w-3 h-3" />
-                  </Link>
-                </motion.div>
-              ))
+
+                    {isEnrolled ? (
+                      <div className="flex items-center gap-2 mt-2">
+                        <Link to={`/subjects/${subject.id}/papers`} className="flex-1 bg-primary/5 text-primary py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-primary hover:text-white transition-all">
+                          Access Papers <ArrowRight className="w-3 h-3" />
+                        </Link>
+                        <button 
+                          onClick={() => setShowUnenrollConfirm(subject.id)}
+                          disabled={isEnrolling}
+                          className="px-3 py-3 rounded-xl bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                          title="Unenroll"
+                        >
+                          {isEnrolling ? <Loader2 className="w-4 h-4 animate-spin" /> : <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>}
+                        </button>
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={() => handleEnroll(subject.id)}
+                        disabled={isEnrolling}
+                        className="w-full bg-slate-900 text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-primary transition-all mt-2"
+                      >
+                        {isEnrolling ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookOpen className="w-3 h-3" />} Enroll to Access
+                      </button>
+                    )}
+                  </motion.div>
+                );
+              })
             ) : (
               <div className="col-span-full bg-white border border-slate-100 border-dashed rounded-xl p-12 text-center">
                 <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -220,54 +277,55 @@ const Dashboard = () => {
             </div>
           </div>
 
-
-          {canShowReview && (
-            <div className="bg-white border border-slate-100 rounded-xl p-6 shadow-sm">
-              <h3 className="text-base font-bold text-deep-brown mb-4">How are we doing?</h3>
-              {reviewSubmitted ? (
-                <div className="text-center py-4">
-                  <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <CheckCircle className="w-6 h-6 text-green-500" />
-                  </div>
-                  <p className="text-sm font-bold text-slate-900 mb-1">Thank you!</p>
-                  <p className="text-xs text-slate-500">Your review is being moderated.</p>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmitReview} className="space-y-4">
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setReview({ ...review, rating: star })}
-                        className="focus:outline-none"
-                      >
-                        <Star className={`w-5 h-5 ${review.rating >= star ? 'text-accent fill-accent' : 'text-slate-200'}`} />
-                      </button>
-                    ))}
-                  </div>
-                  <textarea
-                    required
-                    placeholder="Share your experience..."
-                    value={review.content}
-                    onChange={(e) => setReview({ ...review, content: e.target.value })}
-                    className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-primary/20 min-h-[80px] font-medium"
-                  />
-                  <button
-                    type="submit"
-                    disabled={submittingReview}
-                    className="w-full py-2.5 bg-primary text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-primary-dark transition-all shadow-sm shadow-primary/20"
-                  >
-                    {submittingReview ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trophy className="w-3.5 h-3.5 text-accent" />}
-                    Submit Testimonial
-                  </button>
-                </form>
-              )}
-            </div>
-          )}
         </div>
 
       </div>
+
+      {/* Unenroll Confirmation Modal */}
+      <AnimatePresence>
+          {showUnenrollConfirm && (
+              <div className="fixed inset-0 z-[300] flex items-center justify-center p-6">
+                  <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+                      onClick={() => setShowUnenrollConfirm(null)}
+                  />
+                  <motion.div 
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.9, opacity: 0 }}
+                      className="bg-white w-full max-w-sm rounded-3xl p-10 relative shadow-2xl border border-blue-50 z-10"
+                  >
+                      <div className="flex flex-col items-center text-center">
+                          <div className="w-20 h-20 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center mb-8 shadow-inner">
+                              <AlertCircle className="w-10 h-10" />
+                          </div>
+                          <h2 className="text-2xl font-bold text-slate-900 mb-2">Unenroll?</h2>
+                          <p className="text-slate-500 font-medium text-sm leading-relaxed mb-10">
+                              You'll lose quick access to this subject and its papers.
+                          </p>
+                          
+                          <div className="flex flex-col w-full gap-4">
+                              <button 
+                                  onClick={() => handleUnenroll(showUnenrollConfirm)}
+                                  className="w-full py-5 bg-slate-900 text-white rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 shadow-xl shadow-slate-900/10"
+                              >
+                                  Confirm Unenroll
+                              </button>
+                              <button 
+                                  onClick={() => setShowUnenrollConfirm(null)}
+                                  className="w-full py-5 bg-white text-slate-400 rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-slate-50 border border-blue-50 transition-all"
+                              >
+                                  Keep Subject
+                              </button>
+                          </div>
+                      </div>
+                  </motion.div>
+              </div>
+          )}
+      </AnimatePresence>
     </div>
   );
 };

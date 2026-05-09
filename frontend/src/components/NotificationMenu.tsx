@@ -93,7 +93,7 @@ const NotificationMenu = () => {
             initial={{ opacity: 0, y: 15, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 15, scale: 0.95 }}
-            className="fixed md:absolute left-4 right-4 md:left-auto md:right-0 mt-3 md:w-96 bg-white border border-slate-100 rounded-[2rem] shadow-2xl z-50 overflow-hidden"
+            className="fixed md:absolute left-4 right-4 md:left-auto md:right-0 mt-3 md:w-96 bg-white border border-slate-100 rounded-2xl shadow-2xl z-50 overflow-hidden"
           >
             <div className="p-6 border-b border-slate-50 flex items-center justify-between bg-white">
               <h3 className="text-lg font-black text-slate-900 tracking-tight">Notifications</h3>

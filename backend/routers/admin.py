@@ -48,11 +48,29 @@ def get_admin_stats(
     """Platform-wide statistics for the admin dashboard."""
     from datetime import datetime, timedelta
     
-    # Basic Counts
+    # Basic Counts (Filter by active levels where applicable)
     student_count = db.exec(select(func.count(User.id)).where(User.role == "student")).one()
-    subject_count = db.exec(select(func.count(Subject.id))).one()
-    paper_count = db.exec(select(func.count(Paper.id))).one()
-    video_count = db.exec(select(func.count(Video.id))).one()
+    
+    subject_count = db.exec(
+        select(func.count(Subject.id))
+        .join(Level)
+        .where(Level.is_deleted == False)
+    ).one()
+    
+    paper_count = db.exec(
+        select(func.count(Paper.id))
+        .join(Subject)
+        .join(Level)
+        .where(Level.is_deleted == False)
+    ).one()
+    
+    video_count = db.exec(
+        select(func.count(Video.id))
+        .join(Paper)
+        .join(Subject)
+        .join(Level)
+        .where(Level.is_deleted == False)
+    ).one()
 
     # Calculate Signups in last 7 days
     seven_days_ago = datetime.utcnow() - timedelta(days=7)
@@ -62,16 +80,22 @@ def get_admin_stats(
         .where(User.created_at >= seven_days_ago)
     ).one()
 
-    # Calculate Student growth (simulated trend since we might not have many months of data)
-    # If we have 0 students, growth is 0. If we have signups this week, growth is positive.
+    # Growth calculation
     growth = 0
     if student_count > 0:
         growth = int((new_signups_week / student_count) * 100) if student_count > new_signups_week else 100
 
-    # Resource coverage / Efficiency
-    # Percentage of papers that have at least one video solution
-    papers_with_video = db.exec(select(func.count(func.distinct(Video.paper_id)))).one()
-    efficiency = int((papers_with_video / paper_count) * 100) if paper_count > 0 else 0
+    # Explicit Video Coverage (Efficiency)
+    # Count unique papers that have at least one video
+    papers_with_video = db.exec(
+        select(func.count(func.distinct(Video.paper_id)))
+        .join(Paper)
+        .join(Subject)
+        .join(Level)
+        .where(Level.is_deleted == False)
+    ).one()
+    
+    coverage_pct = int((papers_with_video / paper_count) * 100) if paper_count > 0 else 0
 
     return {
         "total_students": student_count,
@@ -80,8 +104,9 @@ def get_admin_stats(
         "total_videos": video_count,
         "new_signups_week": new_signups_week,
         "student_trend": f"+{growth}% this month" if growth > 0 else "Stable",
-        "efficiency": efficiency,
-        "resource_trend": f"+{video_count} solutions" if video_count > 0 else "Up to date"
+        "efficiency": coverage_pct,
+        "papers_with_video": papers_with_video,
+        "resource_trend": f"{papers_with_video}/{paper_count} solved"
     }
 
 
@@ -113,13 +138,23 @@ def get_recent_subjects(
 @router.get("/users")
 def list_users(
     role: str = None,
+    q: str = None,
     db: Session = Depends(get_session),
     current_user: User = Depends(require_admin)
 ):
-    """List registered users, optionally filtered by role."""
+    """List registered users with server-side filtering and search."""
     statement = select(User)
     if role:
         statement = statement.where(User.role == role)
+    if q:
+        search_filter = f"%{q}%"
+        statement = statement.where(
+            (User.full_name.ilike(search_filter)) | 
+            (User.email.ilike(search_filter))
+        )
+    
+    # Order by newest first
+    statement = statement.order_by(User.created_at.desc())
     
     users = db.exec(statement).all()
     return [
@@ -207,10 +242,13 @@ def delete_user(
 # ── Levels CRUD ──────────────────────────────────────────────
 @router.get("/levels", response_model=List[LevelResponseSchema])
 def list_levels(
+    trash: bool = False,
     db: Session = Depends(get_session),
     current_user: User = Depends(require_admin)
 ):
-    return db.exec(select(Level)).all()
+    """List levels. Use trash=true to see soft-deleted ones."""
+    statement = select(Level).where(Level.is_deleted == trash)
+    return db.exec(statement).all()
 
 
 @router.post("/levels", response_model=LevelResponseSchema, status_code=status.HTTP_201_CREATED)
@@ -219,6 +257,22 @@ def create_level(
     db: Session = Depends(get_session),
     current_user: User = Depends(require_admin)
 ):
+    # Check if level already exists (including soft-deleted ones)
+    existing_level = db.exec(select(Level).where(Level.name == level_data.name)).first()
+    
+    if existing_level:
+        if existing_level.is_deleted:
+            # Restore the soft-deleted level
+            existing_level.is_deleted = False
+            existing_level.deleted_at = None
+            db.add(existing_level)
+            db.commit()
+            db.refresh(existing_level)
+            return existing_level
+        else:
+            raise HTTPException(status_code=400, detail="A level with this name already exists")
+            
+    # Create new level
     level = Level(**level_data.model_dump())
     db.add(level)
     db.commit()
@@ -244,17 +298,56 @@ def update_level(
 
 
 @router.delete("/levels/{level_id}")
-def delete_level(
+def soft_delete_level(
     level_id: uuid.UUID,
     db: Session = Depends(get_session),
     current_user: User = Depends(require_admin)
 ):
+    """Soft delete a level (marks as deleted for 48h)."""
+    from datetime import datetime
+    level = db.get(Level, level_id)
+    if not level:
+        raise HTTPException(status_code=404, detail="Level not found")
+    
+    level.is_deleted = True
+    level.deleted_at = datetime.utcnow()
+    db.add(level)
+    db.commit()
+    return {"message": "Level moved to trash"}
+
+
+@router.post("/levels/{level_id}/restore")
+def restore_level(
+    level_id: uuid.UUID,
+    db: Session = Depends(get_session),
+    current_user: User = Depends(require_admin)
+):
+    """Restore a soft-deleted level."""
+    level = db.get(Level, level_id)
+    if not level:
+        raise HTTPException(status_code=404, detail="Level not found")
+    
+    level.is_deleted = False
+    level.deleted_at = None
+    db.add(level)
+    db.commit()
+    db.refresh(level)
+    return level
+
+
+@router.delete("/levels/{level_id}/permanent")
+def permanent_delete_level(
+    level_id: uuid.UUID,
+    db: Session = Depends(get_session),
+    current_user: User = Depends(require_admin)
+):
+    """Permanently delete a level."""
     level = db.get(Level, level_id)
     if not level:
         raise HTTPException(status_code=404, detail="Level not found")
     db.delete(level)
     db.commit()
-    return {"message": "Level deleted"}
+    return {"message": "Level permanently deleted"}
 
 
 # ── Subjects CRUD ────────────────────────────────────────────
@@ -339,8 +432,22 @@ def list_papers(
     db: Session = Depends(get_session),
     current_user: User = Depends(require_admin)
 ):
-    video_counts = dict(db.exec(select(Video.paper_id, func.count(Video.id)).group_by(Video.paper_id)).all())
-    pdf_counts = dict(db.exec(select(PDF.paper_id, func.count(PDF.id)).group_by(PDF.paper_id)).all())
+    # Efficient counting with subqueries or direct grouped queries
+    count_filter = select(Paper.id)
+    if subject_id:
+        count_filter = count_filter.where(Paper.subject_id == subject_id)
+        
+    video_counts = dict(db.exec(
+        select(Video.paper_id, func.count(Video.id))
+        .where(Video.paper_id.in_(count_filter))
+        .group_by(Video.paper_id)
+    ).all())
+    
+    pdf_counts = dict(db.exec(
+        select(PDF.paper_id, func.count(PDF.id))
+        .where(PDF.paper_id.in_(count_filter))
+        .group_by(PDF.paper_id)
+    ).all())
 
     statement = select(Paper)
     if subject_id:
@@ -371,14 +478,15 @@ def create_paper(
     db.commit()
     db.refresh(paper)
 
-    # Notify all students about the new paper
-    students = db.exec(select(User).where(User.role == "student")).all()
+    # Notify all students about the new paper (Fetch IDs only for memory efficiency)
+    student_ids = db.exec(select(User.id).where(User.role == "student")).all()
     subject = db.get(Subject, paper.subject_id)
     subject_name = subject.name if subject else "a new subject"
     
-    for student in students:
+    # Batch add notifications
+    for sid in student_ids:
         db.add(Notification(
-            user_id=student.id,
+            user_id=sid,
             message=f"New Resource! {paper.year} {subject_name} ({paper.paper_type}) is now available.",
             type="info",
             link=f"/papers/{paper.id}"

@@ -6,7 +6,7 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<any>;
-  register: (full_name: string, email: string, password: string, whatsapp_number?: string, level?: string) => Promise<boolean>;
+  register: (full_name: string, email: string, password: string, whatsapp_number?: string, level?: string, region?: string, current_school?: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (data: any) => void;
   clearError: () => void;
@@ -80,7 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (full_name: string, email: string, password: string, whatsapp_number?: string, level?: string) => {
+  const register = async (full_name: string, email: string, password: string, whatsapp_number?: string, level?: string, region?: string, current_school?: string) => {
     setLoading(true);
     setError(null);
     try {
@@ -90,6 +90,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
         ...(whatsapp_number ? { whatsapp_number } : {}),
         ...(level ? { level } : {}),
+        ...(region ? { region } : {}),
+        ...(current_school ? { current_school } : {}),
       });
       const { access_token, user: newUserData } = response.data;
       localStorage.setItem('token', access_token);

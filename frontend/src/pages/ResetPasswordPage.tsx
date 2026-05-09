@@ -51,7 +51,7 @@ const ResetPasswordPage = () => {
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md w-full bg-white rounded-[2.5rem] p-10 shadow-xl border border-slate-100 text-center"
+          className="max-w-md w-full bg-white rounded-3xl p-10 shadow-xl border border-slate-100 text-center"
         >
           <div className="w-20 h-20 bg-green-50 text-green-500 rounded-3xl flex items-center justify-center mx-auto mb-8">
             <CheckCircle2 className="w-10 h-10" />
@@ -73,7 +73,7 @@ const ResetPasswordPage = () => {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full bg-white rounded-[3rem] p-10 shadow-2xl border border-slate-100 relative overflow-hidden"
+        className="max-w-md w-full bg-white rounded-3xl p-10 shadow-2xl border border-slate-100 relative overflow-hidden"
       >
         <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl"></div>
         

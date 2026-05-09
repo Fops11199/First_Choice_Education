@@ -359,7 +359,7 @@ const CommunityGroupPage = () => {
                         <motion.div 
                             initial={{ scale: 0.9, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
-                            className="bg-white w-full max-w-2xl rounded-[3rem] p-8 sm:p-14 relative shadow-[0_50px_100px_rgba(0,0,0,0.3)] overflow-hidden border border-white/20"
+                            className="bg-white w-full max-w-2xl rounded-3xl p-8 sm:p-14 relative shadow-[0_50px_100px_rgba(0,0,0,0.3)] overflow-hidden border border-white/20"
                         >
                             <div className="absolute -top-12 -right-12 p-8 opacity-5">
                                 <Plus className="w-64 h-64 text-primary" />
@@ -378,7 +378,7 @@ const CommunityGroupPage = () => {
                                         value={newThreadTitle}
                                         onChange={(e) => setNewThreadTitle(e.target.value)}
                                         placeholder="What should we talk about?"
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-[2rem] py-8 px-10 text-lg font-bold focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all shadow-inner"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-8 px-10 text-lg font-bold focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all shadow-inner"
                                     />
                                 </div>
                                 <div className="flex gap-4 pt-6">

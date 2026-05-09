@@ -19,7 +19,7 @@ class Community(SQLModel, table=True):
 class CommunityMember(SQLModel, table=True):
     community_id: uuid.UUID = Field(foreign_key="community.id", primary_key=True)
     user_id: uuid.UUID = Field(foreign_key="user.id", primary_key=True)
-    role: str = Field(default="member") # owner, moderator, member
+    role: str = Field(default="member", index=True) # owner, moderator, member
     status: str = Field(default="active", index=True) # active, pending, banned — filtered often
     joined_at: datetime = Field(default_factory=datetime.utcnow)
     
@@ -42,7 +42,7 @@ class Reply(SQLModel, table=True):
     author_id: uuid.UUID = Field(foreign_key="user.id", index=True)
     content: str
     parent_id: Optional[uuid.UUID] = Field(default=None, foreign_key="reply.id", index=True)
-    is_pinned: bool = Field(default=False)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    is_pinned: bool = Field(default=False, index=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
     
     thread: Thread = Relationship(back_populates="replies")

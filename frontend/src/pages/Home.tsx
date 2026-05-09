@@ -82,22 +82,34 @@ const Home = () => {
               {user ? (
                 <>
                   <h1 className="text-3xl md:text-5xl lg:text-7xl font-black text-white mb-6 leading-[1.1] tracking-tight">
-                    Ready to <br />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-light to-accent">
-                      Continue?
-                    </span>
+                    {user.role === 'admin' ? (
+                      <>Platform <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-light to-accent">Command Center</span></>
+                    ) : user.role === 'tutor' ? (
+                      <>Tutor <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-light to-accent">Workspace</span></>
+                    ) : (
+                      <>Ready to <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-light to-accent">Continue?</span></>
+                    )}
                   </h1>
                   <p className="text-base md:text-xl text-slate-300 mb-6 md:mb-10 max-w-xl leading-relaxed font-medium">
-                    You're doing great! Jump back into your subjects and keep that streak alive. Every paper solved is a step closer to success.
+                    {user.role === 'admin' 
+                      ? "Oversee platform activity, manage content, and monitor student engagement from your unified portal."
+                      : user.role === 'tutor'
+                      ? "Create content, review student progress, and answer questions to help students succeed."
+                      : "You're doing great! Jump back into your subjects and keep that streak alive. Every paper solved is a step closer to success."}
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4">
-                    <Link to="/dashboard" className="btn-primary py-4 px-8 text-lg hover:scale-105 transition-transform shadow-[0_0_30px_rgba(206,32,41,0.4)]">
-                      Go to Dashboard
+                    <Link 
+                      to={user.role === 'admin' ? '/admin_dashboard' : user.role === 'tutor' ? '/tutor_dashboard' : '/dashboard'} 
+                      className="btn-primary py-4 px-8 text-lg hover:scale-105 transition-transform shadow-[0_0_30px_rgba(206,32,41,0.4)]"
+                    >
+                      {user.role === 'admin' ? 'Go to Admin Portal' : user.role === 'tutor' ? 'Go to Tutor Portal' : 'Go to Dashboard'}
                     </Link>
-                    <Link to="/subjects" className="px-8 py-4 bg-white/5 backdrop-blur-md text-white font-semibold rounded-xl border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all flex items-center justify-center gap-2">
-                      <Book className="w-5 h-5" />
-                      Browse Subjects
-                    </Link>
+                    {user.role === 'student' && (
+                      <Link to="/subjects" className="px-8 py-4 bg-white/5 backdrop-blur-md text-white font-semibold rounded-xl border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all flex items-center justify-center gap-2">
+                        <Book className="w-5 h-5" />
+                        Browse Subjects
+                      </Link>
+                    )}
                   </div>
                 </>
               ) : (

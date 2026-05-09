@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Plus, FileText, Trash2, Loader2, ExternalLink, X, Play, Upload, ArrowUpRight } from 'lucide-react';
+import { ChevronLeft, Plus, FileText, Trash2, Loader2, ExternalLink, X, Play, Upload, ArrowUpRight, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import api from '../../api/api';
+import ConfirmModal from '../../components/ui/ConfirmModal';
 
 const AdminPapers = () => {
   const { subjectId } = useParams();
@@ -18,6 +19,7 @@ const AdminPapers = () => {
   
   const [isContentModalOpen, setIsContentModalOpen] = useState(false);
   const [selectedPaper, setSelectedPaper] = useState<any>(null);
+  const [selectedYear, setSelectedYear] = useState<number | 'all'>('all');
   
   // Unified content state
   const [contentForm, setContentForm] = useState({
@@ -31,6 +33,8 @@ const AdminPapers = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingQuestion, setIsUploadingQuestion] = useState(false);
   const [isUploadingAnswer, setIsUploadingAnswer] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string, year: number } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -46,13 +50,24 @@ const AdminPapers = () => {
       
       const currentSubject = subjectsRes.data.find((s: any) => s.id === subjectId);
       setSubject(currentSubject);
-      setPapers(papersRes.data);
+      
+      const loadedPapers = papersRes.data;
+      setPapers(loadedPapers);
+      
+      // Default to the most recent year if papers exist
+      if (loadedPapers.length > 0) {
+        const maxYear = Math.max(...loadedPapers.map((p: any) => p.year));
+        setSelectedYear(maxYear);
+      }
     } catch (err) {
       toast.error("Fetch Failed", { description: "Could not retrieve papers." });
     } finally {
       setLoading(false);
     }
   };
+
+  const years = Array.from(new Set(papers.map(p => p.year))).sort((a, b) => b - a);
+  const filteredPapers = selectedYear === 'all' ? papers : papers.filter(p => p.year === selectedYear);
 
   const handleAddPaper = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,13 +178,21 @@ const AdminPapers = () => {
   };
 
   const handleDeletePaper = async (id: string, year: number) => {
-    if (!window.confirm(`Delete ${year} paper and all its associated videos/PDFs?`)) return;
+    setDeleteTarget({ id, year });
+  };
+
+  const confirmDeleteAction = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
     try {
-      await api.delete(`/admin/papers/${id}`);
+      await api.delete(`/admin/papers/${deleteTarget.id}`);
       toast.success("Paper Removed");
+      setDeleteTarget(null);
       fetchData();
     } catch (err) {
       toast.error("Delete Failed");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -215,16 +238,39 @@ const AdminPapers = () => {
         </motion.button>
       </div>
 
+      {/* Year Selector */}
+      {papers.length > 0 && (
+        <div className="px-4">
+          <div className="flex flex-col gap-3">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Filter by Year</p>
+            <div className="relative group w-full md:w-64">
+              <select 
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+                className="w-full pl-5 pr-12 py-3.5 bg-white border border-blue-50 hover:border-primary/30 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all appearance-none cursor-pointer shadow-sm"
+              >
+                <option value="all">ALL YEARS</option>
+                {years.map((year) => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none group-focus-within:rotate-180 transition-transform" />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Papers Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4">
         {papers.length > 0 ? (
-          papers.map((paper) => (
-            <motion.div 
+          filteredPapers.length > 0 ? (
+            filteredPapers.map((paper) => (
+              <motion.div 
               key={paper.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               whileHover={{ y: -6 }}
-              className="bg-white border border-blue-50 rounded-[2.5rem] p-6 shadow-sm hover:shadow-xl hover:shadow-blue-100/30 transition-all duration-300 group relative overflow-hidden flex flex-col"
+              className="bg-white border border-blue-50 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:shadow-blue-100/30 transition-all duration-300 group relative overflow-hidden flex flex-col"
             >
               {/* Background Decoration */}
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors"></div>
@@ -295,10 +341,16 @@ const AdminPapers = () => {
                 </div>
               </div>
             </motion.div>
-          ))
+            ))
+          ) : (
+            <div className="col-span-full py-20 text-center bg-white border border-blue-50 border-dashed rounded-3xl shadow-sm">
+              <h3 className="text-xl font-bold text-slate-800 mb-2">No papers found for {selectedYear}</h3>
+              <p className="text-slate-400 font-medium max-w-sm mx-auto">Try selecting a different year or add a new paper.</p>
+            </div>
+          )
         ) : (
-          <div className="col-span-full py-32 text-center bg-white border border-blue-50 border-dashed rounded-[3rem] shadow-sm">
-            <div className="w-24 h-24 bg-blue-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 text-blue-200">
+          <div className="col-span-full py-32 text-center bg-white border border-blue-50 border-dashed rounded-3xl shadow-sm">
+            <div className="w-24 h-24 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-8 text-blue-200">
               <FileText className="w-12 h-12" />
             </div>
             <h3 className="text-xl font-bold text-slate-800 mb-2">No papers published yet</h3>
@@ -320,11 +372,11 @@ const AdminPapers = () => {
         {isPaperModalOpen && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsPaperModalOpen(false)} />
-            <motion.div initial={{ scale: 0.9, opacity: 0, y: 40 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 40 }} className="relative bg-white rounded-[3rem] p-10 w-full max-w-xl shadow-2xl border border-blue-50 overflow-hidden">
+            <motion.div initial={{ scale: 0.9, opacity: 0, y: 40 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 40 }} className="relative bg-white rounded-3xl p-10 w-full max-w-xl shadow-2xl border border-blue-50 overflow-hidden">
               <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/5 rounded-full blur-3xl"></div>
               
               <div className="relative z-10">
-                <div className="w-16 h-16 bg-blue-50 text-primary rounded-[1.5rem] flex items-center justify-center mb-8 shadow-inner">
+                <div className="w-16 h-16 bg-blue-50 text-primary rounded-2xl flex items-center justify-center mb-8 shadow-inner">
                   <Plus className="w-8 h-8" />
                 </div>
                 
@@ -375,10 +427,10 @@ const AdminPapers = () => {
         {isContentModalOpen && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsContentModalOpen(false)} />
-            <motion.div initial={{ scale: 0.9, opacity: 0, y: 40 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 40 }} className="relative bg-white rounded-[3rem] p-8 md:p-10 w-full max-w-3xl shadow-2xl border border-blue-50 max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-blue-100">
+            <motion.div initial={{ scale: 0.9, opacity: 0, y: 40 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 40 }} className="relative bg-white rounded-3xl p-8 md:p-10 w-full max-w-3xl shadow-2xl border border-blue-50 max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-blue-100">
               <div className="flex items-start justify-between mb-10">
                 <div className="flex items-center gap-5">
-                  <div className="w-14 h-14 bg-blue-50 rounded-[1.2rem] flex items-center justify-center text-primary shadow-inner">
+                  <div className="w-14 h-14 bg-blue-50 rounded-xl flex items-center justify-center text-primary shadow-inner">
                     <Upload className="w-6 h-6" />
                   </div>
                   <div>
@@ -414,7 +466,7 @@ const AdminPapers = () => {
 
               <form onSubmit={handleSaveMaterials} className="space-y-8">
                 {/* YouTube Link Section */}
-                <div className="p-6 bg-blue-50/20 rounded-[2rem] border border-blue-50 space-y-6 relative overflow-hidden group">
+                <div className="p-6 bg-blue-50/20 rounded-2xl border border-blue-50 space-y-6 relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-6 text-primary/5 group-hover:text-primary/10 transition-colors">
                     <Play className="w-20 h-20 rotate-12" />
                   </div>
@@ -438,7 +490,7 @@ const AdminPapers = () => {
                 </div>
 
                 {/* PDF Materials Section */}
-                <div className="p-6 bg-blue-50/20 rounded-[2rem] border border-blue-50 space-y-6 relative overflow-hidden group">
+                <div className="p-6 bg-blue-50/20 rounded-2xl border border-blue-50 space-y-6 relative overflow-hidden group">
                    <div className="absolute top-0 right-0 p-6 text-blue-500/5 group-hover:text-blue-500/10 transition-colors">
                     <FileText className="w-20 h-20 -rotate-12" />
                   </div>
@@ -496,6 +548,18 @@ const AdminPapers = () => {
           </div>
         )}
       </AnimatePresence>
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmDeleteAction}
+        isLoading={isDeleting}
+        title="Remove Paper?"
+        message={`Are you sure you want to delete the ${deleteTarget?.year} paper entry? This will permanently remove all associated videos and PDF materials.`}
+        confirmText="Yes, Delete Entry"
+        cancelText="Keep Paper"
+        type="danger"
+      />
     </div>
   );
 };

@@ -6,6 +6,8 @@ import uuid
 class Level(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = Field(unique=True) # O-Level, A-Level
+    is_deleted: bool = Field(default=False)
+    deleted_at: Optional[datetime] = None
     subjects: List["Subject"] = Relationship(back_populates="level", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 class Subject(SQLModel, table=True):

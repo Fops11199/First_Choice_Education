@@ -9,5 +9,5 @@ class Notification(SQLModel, table=True):
     message: str
     type: str = Field(default="system") # system, reply, mention, announcement
     link: Optional[str] = None # URL to navigate to when clicked
-    is_read: bool = Field(default=False)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    is_read: bool = Field(default=False, index=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow, index=True)

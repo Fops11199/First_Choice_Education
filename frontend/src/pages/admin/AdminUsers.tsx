@@ -22,19 +22,27 @@ const AdminUsers = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/admin/users' + (filterRole !== 'all' ? `?role=${filterRole}` : ''));
+      let url = '/admin/users';
+      const params = new URLSearchParams();
+      if (filterRole !== 'all') params.append('role', filterRole);
+      if (searchQuery) params.append('q', searchQuery);
+      
+      const res = await api.get(`${url}?${params.toString()}`);
       setUsers(res.data);
     } catch (err) {
       console.error('Failed to fetch users', err);
-      toast.error("Fetch Failed", { description: "Could not synchronize the user directory." });
+      toast.error("Fetch Failed");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsers();
-  }, [filterRole]);
+    const timer = setTimeout(() => {
+      fetchUsers();
+    }, 300); // Debounce search
+    return () => clearTimeout(timer);
+  }, [filterRole, searchQuery]);
 
   const handleRoleChange = async () => {
     if (!roleConfirm) return;
@@ -94,10 +102,7 @@ const AdminUsers = () => {
     }
   };
 
-  const filteredUsers = users.filter(u => 
-    (u.full_name?.toLowerCase() || "").includes(searchQuery.toLowerCase()) || 
-    (u.email?.toLowerCase() || "").includes(searchQuery.toLowerCase())
-  );
+
 
   return (
     <div className="max-w-7xl mx-auto space-y-10 pb-12">
@@ -121,7 +126,7 @@ const AdminUsers = () => {
         </motion.button>
       </div>
 
-      <div className="bg-white border border-blue-50 rounded-[2.5rem] shadow-sm overflow-hidden flex flex-col min-h-[600px]">
+      <div className="bg-white border border-blue-50 rounded-3xl shadow-sm overflow-hidden flex flex-col min-h-[600px]">
         {/* Toolbar */}
         <div className="p-6 border-b border-blue-50 flex flex-col xl:flex-row items-center justify-between gap-6 bg-blue-50/10">
           <div className="relative w-full max-w-xl">
@@ -185,10 +190,10 @@ const AdminUsers = () => {
                     </div>
                   </td>
                 </tr>
-              ) : filteredUsers.length === 0 ? (
+              ) : users.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="px-8 py-32 text-center">
-                    <div className="w-24 h-24 bg-blue-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6 text-blue-100">
+                    <div className="w-24 h-24 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-6 text-blue-100">
                       <Search className="w-10 h-10" />
                     </div>
                     <p className="text-slate-800 font-semibold text-xl mb-2">No users identified</p>
@@ -196,7 +201,7 @@ const AdminUsers = () => {
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((u) => (
+                users.map((u) => (
                   <motion.tr 
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -359,7 +364,7 @@ const AdminUsers = () => {
 const ModalWrapper = ({ children, onClose }: any) => (
   <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={onClose} />
-    <motion.div initial={{ opacity: 0, scale: 0.9, y: 40 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 40 }} className="relative bg-white rounded-[3rem] p-10 w-full max-w-2xl shadow-2xl overflow-hidden border border-blue-50">
+    <motion.div initial={{ opacity: 0, scale: 0.9, y: 40 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 40 }} className="relative bg-white rounded-3xl p-10 w-full max-w-2xl shadow-2xl overflow-hidden border border-blue-50">
       {children}
     </motion.div>
   </div>

@@ -85,7 +85,7 @@ const CommunityPage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Main Content */}
         <div className="lg:col-span-3 space-y-4">
-          <div className="bg-white border border-slate-200 rounded-[2rem] p-6 flex items-center gap-4 mb-10 shadow-sm ring-1 ring-slate-100">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 flex items-center gap-4 mb-10 shadow-sm ring-1 ring-slate-100">
             <Search className="text-slate-400 w-6 h-6" />
             <input 
               type="text" 
@@ -222,7 +222,7 @@ const CommunityPage = () => {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white rounded-[3rem] p-8 md:p-14 w-full max-w-2xl shadow-2xl overflow-hidden border border-slate-100"
+              className="relative bg-white rounded-3xl p-8 md:p-14 w-full max-w-2xl shadow-2xl overflow-hidden border border-slate-100"
             >
               <div className="absolute top-0 right-0 p-6">
                 <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400">

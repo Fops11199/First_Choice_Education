@@ -47,7 +47,7 @@ const LevelSelector = () => {
         <p className="text-sm md:text-base text-slate-600 font-medium leading-relaxed">Choose the GCE level you are currently preparing for to see relevant subjects.</p>
       </div>
 
-      <div className="max-w-md mx-auto bg-white border border-slate-100 rounded-[2.5rem] p-10 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)]">
+      <div className="max-w-md mx-auto bg-white border border-slate-100 rounded-3xl p-10 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)]">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-10">
             <Loader2 className="w-10 h-10 text-primary animate-spin" />

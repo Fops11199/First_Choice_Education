@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { BookOpen, Menu, X, User, LogOut, Settings, AlertCircle, GraduationCap } from 'lucide-react';
+import { BookOpen, Menu, X, User, LogOut, Settings, AlertCircle, GraduationCap, ChevronDown } from 'lucide-react';
+import logo from '../assets/logo.png';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import NotificationMenu from './NotificationMenu';
@@ -8,14 +9,34 @@ import NotificationMenu from './NotificationMenu';
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsOpen(false);
+    setShowUserMenu(false);
+  }, [location.pathname]);
 
   const navLinks = [
     ...(user ? [] : [{ name: 'GCE Levels', path: '/levels' }]),
     { name: 'Subjects', path: '/subjects' },
+    { name: 'Universities', path: '/universities' },
     { name: 'Community', path: '/community' },
+    ...(user ? [{ name: 'Help Center', path: '/help' }] : []),
   ];
 
   const getPortalLink = () => {
@@ -39,168 +60,261 @@ const Navbar = () => {
 
   return (
     <>
-    <nav className="fixed top-0 left-0 right-0 z-[100] bg-white border-b border-blue-50 shadow-sm h-16">
+    {/* ── Navbar ────────────────────────────────────────────── */}
+    <nav style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}
+      className="fixed top-0 left-0 right-0 z-[100] h-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
         <div className="flex justify-between items-center h-full">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="bg-primary p-2 rounded-lg group-hover:scale-105 transition-all">
-              <BookOpen className="w-5 h-5 text-white" />
+
+          <Link to="/" className="flex items-center gap-2.5 shrink-0">
+            <div className="p-1">
+              <img src={logo} alt="First Choice Education" className="w-12 h-12 object-contain" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-slate-800">
-              First Choice Education
-            </span>
+            <div className="flex flex-col -space-y-1">
+              <span className="text-lg font-black tracking-tight" style={{ color: '#1e293b' }}>
+                First Choice <span className="text-blue-600">Education</span>
+              </span>
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                sponsored by Apostle JOHN CHi
+              </span>
+            </div>
           </Link>
 
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-8">
+          {/* Desktop Nav Links */}
+          <div className="hidden md:flex items-center gap-6">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 to={link.path}
-                className={`text-sm font-semibold transition-all relative py-1 ${
-                  location.pathname === link.path ? 'text-primary' : 'text-slate-500 hover:text-primary'
-                }`}
+                className="text-sm font-semibold relative py-1 transition-colors"
+                style={{ color: location.pathname === link.path ? '#2563EB' : '#475569' }}
               >
                 {link.name}
                 {location.pathname === link.path && (
-                  <motion.span layoutId="navUnderline" className="absolute -bottom-1 left-0 w-full h-0.5 bg-primary"></motion.span>
+                  <motion.span layoutId="navUnderline" className="absolute -bottom-1 left-0 w-full h-0.5 bg-blue-600" />
                 )}
               </Link>
             ))}
-            
-            <div className="h-4 w-px bg-slate-200 mx-1"></div>
+
+            <div style={{ width: 1, height: 16, backgroundColor: '#e2e8f0' }} />
 
             {user ? (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <NotificationMenu />
-                
-                <div className="h-4 w-px bg-slate-200 mx-1"></div>
 
-                <div className="relative group/user">
-                  <Link to={getPortalLink()} className="flex items-center gap-3 py-1.5 px-3 bg-blue-50/50 rounded-xl border border-blue-100/50 hover:border-primary/30 transition-all">
-                    <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-md shadow-primary/20">
-                      <User className="w-4 h-4" />
+                {/* User dropdown trigger */}
+                <div className="relative" ref={userMenuRef}>
+                  <button
+                    onClick={() => setShowUserMenu(prev => !prev)}
+                    style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: '6px 12px' }}
+                    className="flex items-center gap-2.5 transition-all hover:border-blue-400"
+                  >
+                    <div style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#2563EB' }}
+                      className="flex items-center justify-center shrink-0">
+                      <User className="w-4 h-4 text-white" />
                     </div>
                     <div className="flex flex-col items-start">
-                      <span className="text-[11px] font-bold text-slate-800 leading-none mb-1">{user?.full_name?.split(' ')[0]}</span>
-                      <span className="text-[9px] font-bold text-primary uppercase tracking-widest leading-none">{user?.role}</span>
+                      <span className="text-xs font-bold leading-none mb-0.5" style={{ color: '#1e293b' }}>
+                        {user?.full_name?.split(' ')[0]}
+                      </span>
+                      <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: '#2563EB' }}>
+                        {user?.role}
+                      </span>
                     </div>
-                  </Link>
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showUserMenu ? 'rotate-180' : ''}`}
+                      style={{ color: '#94a3b8' }} />
+                  </button>
 
-                  {/* Desktop User Dropdown */}
-                  <div className="absolute right-0 mt-2 w-48 py-2 bg-white border border-blue-50 rounded-2xl shadow-xl opacity-0 translate-y-2 pointer-events-none group-hover/user:opacity-100 group-hover/user:translate-y-0 group-hover/user:pointer-events-auto transition-all z-[110]">
-                    <Link to={getPortalLink()} className="flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-blue-50 hover:text-primary transition-all">
-                      <GraduationCap className="w-4 h-4" /> Dashboard
-                    </Link>
-                    <Link to="/settings" className="flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-blue-50 hover:text-primary transition-all">
-                      <Settings className="w-4 h-4" /> Settings
-                    </Link>
-                    <div className="h-px bg-slate-50 my-1 mx-2"></div>
-                    <button onClick={() => setShowLogoutConfirm(true)} className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-red-500 hover:bg-red-50 transition-all text-left">
-                      <LogOut className="w-4 h-4" /> Logout
-                    </button>
-                  </div>
+                  {/* Dropdown */}
+                  <AnimatePresence>
+                    {showUserMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 16, boxShadow: '0 20px 40px rgba(0,0,0,0.12)' }}
+                        className="absolute right-0 mt-2 w-56 py-2 z-[200]"
+                      >
+                        {/* Header */}
+                        <div className="px-4 py-3 mb-1" style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <p className="text-sm font-bold truncate" style={{ color: '#1e293b' }}>{user?.full_name}</p>
+                          <p className="text-[10px] font-bold uppercase tracking-widest mt-0.5" style={{ color: '#2563EB' }}>{user?.role}</p>
+                        </div>
+                        <Link to={getPortalLink()} onClick={() => setShowUserMenu(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-slate-50"
+                          style={{ color: '#374151' }}>
+                          <GraduationCap className="w-4 h-4" style={{ color: '#2563EB' }} /> Dashboard
+                        </Link>
+                        <Link to="/settings" onClick={() => setShowUserMenu(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-slate-50"
+                          style={{ color: '#374151' }}>
+                          <Settings className="w-4 h-4" style={{ color: '#6b7280' }} /> Settings
+                        </Link>
+                        <div style={{ height: 1, backgroundColor: '#f1f5f9', margin: '4px 12px' }} />
+                        <button onClick={() => { setShowUserMenu(false); setShowLogoutConfirm(true); }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-red-50 text-left"
+                          style={{ color: '#ef4444' }}>
+                          <LogOut className="w-4 h-4" /> Logout
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                <Link to="/login" className="text-sm font-semibold text-slate-500 hover:text-primary transition-colors px-3">Sign In</Link>
-                <Link to="/register" className="bg-primary hover:bg-blue-500 text-white py-2 px-6 text-sm rounded-lg font-bold shadow-md shadow-primary/10 transition-all">
+                <Link to="/login"
+                  className="text-sm font-semibold px-3 py-2 rounded-lg transition-colors hover:bg-slate-50"
+                  style={{ color: '#475569' }}>
+                  Sign In
+                </Link>
+                <Link to="/register"
+                  className="text-sm font-bold px-5 py-2 rounded-lg transition-all hover:bg-blue-700"
+                  style={{ backgroundColor: '#2563EB', color: '#ffffff', boxShadow: '0 2px 8px rgba(37,99,235,0.3)' }}>
                   Register
                 </Link>
               </div>
             )}
           </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden flex items-center gap-4">
+          {/* Mobile: notification + hamburger */}
+          <div className="md:hidden flex items-center gap-2">
             {user && <NotificationMenu />}
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="p-2 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors"
+              style={{ backgroundColor: '#f1f5f9', borderRadius: 10, padding: 8 }}
+              className="transition-colors hover:bg-slate-200 active:scale-95"
             >
-              {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {isOpen
+                ? <X className="w-5 h-5" style={{ color: '#1e293b' }} />
+                : <Menu className="w-5 h-5" style={{ color: '#1e293b' }} />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Menu Overlay & Container */}
+      {/* ── Mobile Drawer ─────────────────────────────────────── */}
       <AnimatePresence>
         {isOpen && (
           <div className="fixed inset-0 z-[150] md:hidden">
-            {/* Dark Backdrop */}
+            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              style={{ backgroundColor: 'rgba(15,23,42,0.6)' }}
+              className="absolute inset-0 backdrop-blur-sm"
               onClick={() => setIsOpen(false)}
             />
-            
-            {/* The Actual Menu Drawer */}
+
+            {/* Drawer */}
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="absolute top-0 right-0 bottom-0 w-[300px] bg-white shadow-2xl flex flex-col border-l border-blue-50"
+              transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+              style={{ backgroundColor: '#ffffff', borderLeft: '1px solid #e2e8f0' }}
+              className="absolute top-0 right-0 bottom-0 w-[300px] flex flex-col shadow-2xl"
             >
-              {/* Mobile Header inside Drawer */}
-              <div className="h-16 px-6 border-b border-blue-50 flex items-center justify-between shrink-0">
-                 <div className="flex items-center gap-2.5">
-                    <div className="bg-primary p-1.5 rounded-lg">
-                      <BookOpen className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="text-sm font-bold text-slate-800">First Choice Education</span>
+              {/* Drawer header */}
+              <div className="h-16 px-5 flex items-center justify-between shrink-0"
+                style={{ borderBottom: '1px solid #f1f5f9' }}>
+                <div className="flex items-center gap-2.5">
+                  <div style={{ backgroundColor: '#2563EB', padding: 6, borderRadius: 8 }}>
+                    <BookOpen className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="text-sm font-bold" style={{ color: '#1e293b' }}>First Choice Education</span>
                 </div>
-                <button onClick={() => setIsOpen(false)} className="p-2 text-slate-400">
-                   <X className="w-5 h-5" />
+                <button onClick={() => setIsOpen(false)}
+                  style={{ backgroundColor: '#f1f5f9', borderRadius: 8, padding: 6 }}>
+                  <X className="w-4 h-4" style={{ color: '#64748b' }} />
                 </button>
               </div>
 
-              <div className="p-6 space-y-8 flex-1 overflow-y-auto">
-                <div className="space-y-4">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2">Main Menu</p>
-                  {navLinks.map((link) => (
-                    <Link
-                      key={link.name}
-                      to={link.path}
-                      className={`block px-4 py-3.5 rounded-xl text-sm font-bold transition-all ${
-                        location.pathname === link.path ? 'bg-primary/5 text-primary' : 'text-slate-600 hover:bg-slate-50'
-                      }`}
-                      onClick={() => setIsOpen(false)}
-                    >
-                      {link.name}
-                    </Link>
-                  ))}
+              {/* Drawer body */}
+              <div className="flex-1 overflow-y-auto p-5 space-y-6">
+                {/* Nav links */}
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest px-3 mb-2"
+                    style={{ color: '#94a3b8' }}>Navigation</p>
+                  <div className="space-y-1">
+                    {navLinks.map((link) => (
+                      <Link
+                        key={link.name}
+                        to={link.path}
+                        onClick={() => setIsOpen(false)}
+                        style={{
+                          display: 'flex',
+                          padding: '12px 16px',
+                          borderRadius: 12,
+                          fontWeight: 700,
+                          fontSize: 14,
+                          color: location.pathname === link.path ? '#2563EB' : '#334155',
+                          backgroundColor: location.pathname === link.path ? '#eff6ff' : 'transparent',
+                        }}
+                      >
+                        {link.name}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
-                
-                <div className="pt-6 border-t border-blue-50 space-y-4">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2">Account Control</p>
+
+                {/* Account section */}
+                <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 20 }}>
+                  <p className="text-[10px] font-black uppercase tracking-widest px-3 mb-2"
+                    style={{ color: '#94a3b8' }}>Account</p>
                   {user ? (
                     <div className="space-y-1">
-                      <Link to={getPortalLink()} onClick={() => setIsOpen(false)} className="flex items-center gap-3 px-4 py-3.5 text-slate-600 font-bold text-sm rounded-xl hover:bg-blue-50">
-                        <GraduationCap className="w-5 h-5 text-primary" /> {getPortalName()}
+                      {/* User info card */}
+                      <div className="flex items-center gap-3 px-3 py-3 mb-2"
+                        style={{ backgroundColor: '#f8fafc', borderRadius: 12 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#2563EB' }}
+                          className="flex items-center justify-center shrink-0">
+                          <User className="w-4 h-4 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold" style={{ color: '#1e293b' }}>{user?.full_name}</p>
+                          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#2563EB' }}>{user?.role}</p>
+                        </div>
+                      </div>
+
+                      <Link to={getPortalLink()} onClick={() => setIsOpen(false)}
+                        className="flex items-center gap-3 py-3 px-3 rounded-xl font-bold text-sm"
+                        style={{ color: '#334155' }}>
+                        <GraduationCap className="w-5 h-5" style={{ color: '#2563EB' }} /> {getPortalName()}
                       </Link>
-                      <Link to="/settings" onClick={() => setIsOpen(false)} className="flex items-center gap-3 px-4 py-3.5 text-slate-600 font-bold text-sm rounded-xl hover:bg-blue-50">
-                        <Settings className="w-5 h-5 text-slate-400" /> Settings
+                      <Link to="/settings" onClick={() => setIsOpen(false)}
+                        className="flex items-center gap-3 py-3 px-3 rounded-xl font-bold text-sm"
+                        style={{ color: '#334155' }}>
+                        <Settings className="w-5 h-5" style={{ color: '#64748b' }} /> Settings
                       </Link>
-                      <button onClick={() => setShowLogoutConfirm(true)} className="w-full flex items-center gap-3 px-4 py-3.5 text-red-500 font-bold text-sm rounded-xl hover:bg-red-50">
+                      <button onClick={() => setShowLogoutConfirm(true)}
+                        className="w-full flex items-center gap-3 py-3 px-3 rounded-xl font-bold text-sm"
+                        style={{ color: '#ef4444' }}>
                         <LogOut className="w-5 h-5" /> Logout
                       </button>
                     </div>
                   ) : (
-                    <div className="grid gap-3 pt-2">
-                      <Link to="/login" onClick={() => setIsOpen(false)} className="block w-full text-center py-3.5 text-slate-600 font-bold text-sm border border-blue-50 rounded-xl">Sign In</Link>
-                      <Link to="/register" onClick={() => setIsOpen(false)} className="bg-primary text-white w-full text-center py-4 rounded-xl font-bold text-sm shadow-lg shadow-primary/20">Register Now</Link>
+                    <div className="space-y-3">
+                      <Link to="/login" onClick={() => setIsOpen(false)}
+                        className="block w-full text-center py-3.5 font-bold text-sm rounded-xl"
+                        style={{ color: '#334155', border: '1px solid #e2e8f0', backgroundColor: '#ffffff' }}>
+                        Sign In
+                      </Link>
+                      <Link to="/register" onClick={() => setIsOpen(false)}
+                        className="block w-full text-center py-4 font-bold text-sm rounded-xl"
+                        style={{ backgroundColor: '#2563EB', color: '#ffffff', boxShadow: '0 4px 12px rgba(37,99,235,0.3)' }}>
+                        Register Now
+                      </Link>
                     </div>
                   )}
                 </div>
               </div>
-              <div className="p-6 border-t border-blue-50 bg-slate-50/50">
-                <p className="text-[9px] text-center text-slate-400 font-bold tracking-widest uppercase">© 2026 FIRST CHOICE EDUCATION</p>
+
+              <div className="p-5" style={{ borderTop: '1px solid #f1f5f9', backgroundColor: '#f8fafc' }}>
+                <p className="text-[9px] text-center font-bold tracking-widest uppercase"
+                  style={{ color: '#94a3b8' }}>© 2026 First Choice Education</p>
               </div>
             </motion.div>
           </div>
@@ -208,50 +322,50 @@ const Navbar = () => {
       </AnimatePresence>
     </nav>
 
-    {/* Logout Confirmation Modal */}
+    {/* ── Logout Confirmation Modal ──────────────────────────── */}
     <AnimatePresence>
-        {showLogoutConfirm && (
-            <div className="fixed inset-0 z-[300] flex items-center justify-center p-6">
-                <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
-                    onClick={() => setShowLogoutConfirm(false)}
-                />
-                <motion.div 
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-white w-full max-w-sm rounded-[2.5rem] p-10 relative shadow-2xl border border-blue-50"
-                >
-                    <div className="flex flex-col items-center text-center">
-                        <div className="w-20 h-20 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center mb-8 shadow-inner">
-                            <AlertCircle className="w-10 h-10" />
-                        </div>
-                        <h2 className="text-2xl font-bold text-slate-900 mb-2">Logout?</h2>
-                        <p className="text-slate-500 font-medium text-sm leading-relaxed mb-10">
-                            Your session will be closed. Ready to head out?
-                        </p>
-                        
-                        <div className="flex flex-col w-full gap-4">
-                            <button 
-                                onClick={handleLogout}
-                                className="w-full py-5 bg-slate-900 text-white rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 shadow-xl shadow-slate-900/10"
-                            >
-                                Confirm Logout
-                            </button>
-                            <button 
-                                onClick={() => setShowLogoutConfirm(false)}
-                                className="w-full py-5 bg-white text-slate-400 rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-slate-50 border border-blue-50 transition-all"
-                            >
-                                Keep Browsing
-                            </button>
-                        </div>
-                    </div>
-                </motion.div>
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ backgroundColor: 'rgba(15,23,42,0.6)' }}
+            className="absolute inset-0 backdrop-blur-md"
+            onClick={() => setShowLogoutConfirm(false)}
+          />
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            style={{ backgroundColor: '#ffffff', borderRadius: 28, border: '1px solid #e2e8f0', boxShadow: '0 40px 80px rgba(0,0,0,0.2)' }}
+            className="w-full max-w-sm p-10 relative z-10"
+          >
+            <div className="flex flex-col items-center text-center">
+              <div style={{ width: 80, height: 80, backgroundColor: '#fef2f2', color: '#ef4444', borderRadius: 24 }}
+                className="flex items-center justify-center mb-8">
+                <AlertCircle className="w-10 h-10" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2" style={{ color: '#0f172a' }}>Logout?</h2>
+              <p className="text-sm font-medium mb-10" style={{ color: '#64748b' }}>
+                Your session will be closed. Ready to head out?
+              </p>
+              <div className="flex flex-col w-full gap-3">
+                <button onClick={handleLogout}
+                  className="w-full py-4 text-xs font-bold uppercase tracking-widest rounded-2xl transition-all active:scale-95"
+                  style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                  Confirm Logout
+                </button>
+                <button onClick={() => setShowLogoutConfirm(false)}
+                  className="w-full py-4 text-xs font-bold uppercase tracking-widest rounded-2xl transition-all"
+                  style={{ backgroundColor: '#ffffff', color: '#94a3b8', border: '1px solid #e2e8f0' }}>
+                  Keep Browsing
+                </button>
+              </div>
             </div>
-        )}
+          </motion.div>
+        </div>
+      )}
     </AnimatePresence>
     </>
   );

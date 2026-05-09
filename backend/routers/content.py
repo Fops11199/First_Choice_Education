@@ -25,7 +25,7 @@ def get_levels(
     current_user: User = Depends(require_user)
 ):
     """List all GCE levels (O-Level, A-Level)."""
-    return db.exec(select(Level)).all()
+    return db.exec(select(Level).where(Level.is_deleted == False)).all()
 
 
 # ── Subjects ─────────────────────────────────────────────────
@@ -40,6 +40,8 @@ def get_subjects(
     statement = (
         select(Subject)
         .options(selectinload(Subject.level), selectinload(Subject.papers))
+        .join(Level)
+        .where(Level.is_deleted == False)
     )
     if level_id:
         statement = statement.where(Subject.level_id == level_id)
